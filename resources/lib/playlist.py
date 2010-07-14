@@ -46,26 +46,73 @@ class Main:
         print playlistXml.encode('utf-8')
         playlist = xml.etree.ElementTree.fromstring(playlistXml.encode('utf-8'))
         videos = playlist.findall("PlaylistItem")
+        episodes = dict()
         for video in videos: 
-            # Name
-            listItm = xbmcgui.ListItem(video.findtext("Name"))
+            # Part detection method 1
+            # Look for (1/6) at END of title
+            m = re.search('^(.+?)\(([0-9]+?)\/([0-9]+?)\)$',video.findtext("Name"))
+            if (m != None):
+                title = m.group(1)
+                description = video.findtext("Description")
+                part = m.group(2)
+                totalParts = m.group(3)
+            # Part detection method 2
+            # Look for (1/6) at START of description
+            else:
+                m = re.search('^\(([0-9]+?)\/([0-9]+?)\)(.*)$',video.findtext("Description"))
+                if (m != None):
+                    title = video.findtext("Name")
+                    description = m.group(3)
+                    part = m.group(1)
+                    totalParts = m.group(2)
+                else:
+                    # Part detection method 3
+                    # Look for "Part 2" or "seg 2" in title
+                    m = re.search('^(.*?)(?:\s*-\s*)?(?:[pP]art|seg)\s+?([0-9]+)(.*?)$',video.findtext("Name"))
+                    if (m != None):
+                        title = m.group(1) + " " + m.group(3)
+                        description = video.findtext("Description")
+                        part = m.group(2)
+                    # Give up detecting parts, assume only 1
+                    else:
+                        title = video.findtext("Name")
+                        description = video.findtext("Description")
+                        part = 1
+                        totalParts = 1
             
-            # Thumbnail
-            for img in video.findall("Thumbnails/Thumbnail"):
-                if (img.get("type") == "wide_large" and len(img.text)>0):
-                    listItm.setThumbnailImage(img.text)
+            if not episodes.has_key(title):
+                episodes[title] = dict()
+                episodes[title]["url"] = "stack://"
+            episodes[title]["title"] = title
+            episodes[title]["description"] = description
+            episodes[title]["lastPart"] = part
+            episodes[title]["totalParts"] = totalParts
+            episodes[title]["url"] += video.findtext("StreamUrl") + " , "
             
-            # Broadcast Date
-            date = time.strptime(video.findtext("Date"),"%a, %d %b %Y %H:%M:%S %Z")
+            if not episodes[title].has_key("thumbnail"):
+                for img in video.findall("Thumbnails/Thumbnail"):
+                    if (img.get("type") == "wide_large" and len(img.text)>0):
+                        episodes[title]["thumbnail"] = img.text
+                        break
+            if not episodes[title].has_key("date"):
+                episodes[title]["date"] = time.strptime(video.findtext("Date"),"%a, %d %b %Y %H:%M:%S %Z")
+        
+        for key in episodes:
+            episode = episodes[key]
+            listItm = xbmcgui.ListItem(episode["title"])
+            if episode.has_key("thumbnail") and len(episode["thumbnail"])>0:
+                listItm.setThumbnailImage(episode["thumbnail"])
             
             try:
-                listItm.setInfo("video",{'date': time.strftime("%d.%m.%Y",date),'year':int(time.strftime("%Y",date)),'plot':video.findtext("Description")})
+                listItm.setInfo("video",{'date': time.strftime("%d.%m.%Y",episode["date"]),'year':int(time.strftime("%Y",episode["date"])),'plot':episode["description"]})
             except: pass
             xbmcplugin.addDirectoryItem(handle=int( sys.argv[ 1 ] ),
                 listitem=listItm,
-                url=video.findtext("StreamUrl"),
-                totalItems=len(videos))
+                url=episode["url"][0:-3],  # removes the last comma from the stack url
+                totalItems=len(episodes))
+            print "Adding url " + episode["url"][0:-3]
         #xbmcplugin.addDirectoryItem(handle=int( sys.argv[ 1 ] ),listitem=xbmcgui.ListItem(menu.findtext("title")),url=sys.argv[ 0 ])
+        #xbmcplugin.addSortMethod( handle=int(sys.argv[1], sortMethod=xbmcplugin.SORT_METHOD_DATE))
         xbmcplugin.endOfDirectory( handle=int( sys.argv[ 1 ] ), succeeded=1 )
         
     def _parse_argv( self ):
