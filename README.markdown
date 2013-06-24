@@ -38,3 +38,6 @@ For anything else, you can contact me by email at adman.com@gmail.com
 [download]: https://code.google.com/p/xbmc-catchuptv-au/downloads/list?q=label:Network-Ten
 [githubzip]: https://github.com/xbmc-catchuptv-au/plugin.video.catchuptv.au.ten/archive/master.zip
 [issues]: https://github.com/xbmc-catchuptv-au/plugin.video.catchuptv.au.ten/issues
+[gist]: https://gist.github.com
+[patebin]: http://pastebin.com/
+[xbmc-wiki-log-file]: http://wiki.xbmc.org/index.php?title=Log_file/Advanced#Log_files
