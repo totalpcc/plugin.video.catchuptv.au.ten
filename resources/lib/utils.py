@@ -27,6 +27,7 @@
 
 import sys
 import traceback
+import logging
 import config
 
 def log(s):
@@ -51,3 +52,27 @@ def dialog_error(msg=""):
   content.append("If this error continues to occur, please report it.")
   return content
 
+def handle_logger(logger):
+  class LoggingHandler(logging.Handler):
+    def __init__(self, strm=None):
+        logging.Handler.__init__(self)
+        self.stream = sys.stdout
+
+    def flush(self):
+        pass
+
+    def emit(self, record):
+        try:
+            msg = self.format(record)
+            self.stream.write("%s\n" % msg)
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except:
+            self.handleError(record)
+
+  ch = LoggingHandler()
+  format = "[%s v%s] %s" % (config.NAME, config.VERSION, '[%(module)s:%(funcName)s():%(lineno)d] %(levelname)s: %(message)s')
+  formatter = logging.Formatter(format)
+  ch.setFormatter(formatter)
+  logger.addHandler(ch)
+  logger.setLevel(logging.DEBUG)

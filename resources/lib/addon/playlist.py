@@ -28,10 +28,11 @@ import logging
 import urllib
 import xbmcgui
 import xbmcplugin
+import utils
 from NetworkTenVideo import NetworkTenVideo
 
 # Un-comment for verbose debugging
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s: [%(filename)s:%(lineno)d] %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+utils.handle_logger(logging.getLogger())
 
 class Main:
     def __init__( self ): 
