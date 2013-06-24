@@ -68,4 +68,5 @@ class RestClient:
             return data
         else:
             logging.debug('Unknown content-type, "%s"' % info['Content-Type'])
+            logging.debug(data)
             return data
