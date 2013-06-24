@@ -39,6 +39,23 @@ class Media:
         """
         logging.debug('Getting Media Token')
         return self._makeRequest('authorise/%s' % mediaId)['authorisation']
+
+    def smil(self, mediaId):
+        """
+            Returns the SMIL to allow playback
+
+            Arguments:
+                mediaId - required, media id number
+        """
+        logging.debug('Getting Media SMIL')
+        smil = self._makeRequest('media/%s/smil' % mediaId)['smil']
+        head = {}
+        for meta in smil['head']['meta']:
+            if 'base' in meta:
+                head['base'] = meta['base']
+            elif 'name' in meta and 'content' in meta:
+                head[meta['name']] = meta['content']
+        return {'body': smil['body'], 'head': head}
         
     def getMedia(self, mediaId):
         """
