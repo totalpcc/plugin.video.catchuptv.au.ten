@@ -25,6 +25,8 @@
 #   Copyright (C) 2012 Andy Botting
 #
 
+import sys
+import traceback
 import config
 
 def log(s):
@@ -36,3 +38,16 @@ def log_error(message=None):
     exc_value = message
   print "[%s v%s] ERROR: %s (%d) - %s" % (config.NAME, config.VERSION, exc_traceback.tb_frame.f_code.co_name, exc_traceback.tb_lineno, exc_value)
   print traceback.print_exc()
+
+def dialog_error(msg=""):
+  # Generate a list of lines for use in XBMC dialog
+  content = []
+  exc_type, exc_value, exc_traceback = sys.exc_info()
+  if (msg):
+    msg = " - %s" % msg
+  content.append("%s v%s Error" % (config.NAME, config.VERSION))
+  content.append("%s (%d)%s" % (exc_traceback.tb_frame.f_code.co_name, exc_traceback.tb_lineno, msg))
+  content.append(str(exc_value))
+  content.append("If this error continues to occur, please report it.")
+  return content
+

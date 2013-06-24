@@ -27,7 +27,7 @@ import sys
 import urlparse
 
 try:
-  import xbmcplugin
+  import xbmcgui
   IS_XBMC = True
 except ImportError:
   IS_XBMC = False # for PC debugging
@@ -50,7 +50,7 @@ def loadModule(moduleName, params):
   module.Main(params)
 
 # Display a XBMC error dialog
-def errorDialog(err):
+def errorDialog(err=""):
   if IS_XBMC:
     d = xbmcgui.Dialog()
     message = utils.dialog_error(err)
@@ -72,7 +72,7 @@ if ( __name__ == "__main__" ):
       try:
         loadModule(params['action'][0], params)
       except:
-        errorDialog('An error occured. Check the log for details.')
+        errorDialog()
         utils.log_error()
     else:
       utils.log('Warning: Un-handled query string, loading playlist')
