@@ -24,6 +24,13 @@
 
 import os
 import sys
+import urlparse
+
+try:
+  import xbmcplugin
+  IS_XBMC = True
+except ImportError:
+  IS_XBMC = False # for PC debugging
 
 # Add our resources/lib to the python path
 try:
@@ -33,18 +40,39 @@ except:
 
 sys.path.append(os.path.join(current_dir, 'resources', 'lib'))
 
+import importlib
 import utils
-import addon.playlist, addon.download
+
+# Dynamically load module
+def loadModule(moduleName):
+  utils.log('Loading %s module' % moduleName)
+  module = importlib.import_module('.%s' % moduleName, 'addon')
+  module.Main()
+
+# Display a XBMC error dialog
+def errorDialog(err):
+  if IS_XBMC:
+    d = xbmcgui.Dialog()
+    message = utils.dialog_error(err)
+    d.ok(*message)
+
 
 if ( __name__ == "__main__" ):
-    
-  utils.log('Initialised addon, query string: %s' % sys.argv[2])
+  utils.log('Initialised addon with arguments: %s' % repr(sys.argv))
 
-  if ( not sys.argv[ 2 ] ):
-    addon.playlist.Main()
-  elif ( sys.argv[ 2 ].startswith( "?playlistId=" ) ):
-    addon.playlist.Main()
-  elif ( sys.argv[ 2 ].startswith( "?mediaIds=" ) ):
-    addon.download.Main()
+  if ( len(sys.argv) != 3 or not sys.argv[ 2 ] ):
+    loadModule('playlist')
   else:
-    utils.log_error('Un-handled query string')
+    qs = sys.argv[ 2 ]
+    if ( qs.startswith('?') ):
+      qs = qs[1:]
+    params = urlparse.parse_qs(qs)
+    if ( 'action' in params and len(params['action']) == 1 and params['action'][0]):
+      try:
+        loadModule(params['action'][0])
+      except:
+        errorDialog('An error occured. Check the log for details.')
+        utils.log_error()
+    else:
+      utils.log('Warning: Un-handled query string, loading playlist')
+      loadModule('playlist')
