@@ -24,6 +24,9 @@
 
 import re
 import time
+import random
+import logging
+import urlparse
 from movideoApiClient import movideoApiClient
 from RestClient import RestClient
 from channels import CHANNELS
@@ -106,12 +109,39 @@ class NetworkTenVideo:
         else:
             return {(playlist['tags']['tag']['ns'] + ':' + playlist['tags']['tag']['predicate']): playlist['tags']['tag']['value']}
     
-    def getAds(self, path):
-        if not self.movideoAdvertisingConfig: 
-            self.getApplication()
-        adConfigUrl = self.movideoAdvertisingConfig.url.replace('{vastSite}',self.vastSite).replace('{vastPlayer}',self.vastPlayer).replace('{mediaPath}',path).replace('{timestamp}',str(int(time.time())))
-        rest = RestClient(adConfigUrl)
-        return rest.request()
+    def getAds(self, path, adConfigUrl=None):
+        def getVast(vastUri):
+            rest = RestClient(vastUri)
+            vast = rest.request()['VAST']
+            logging.debug('Advertisement config: %s' % repr(vast))
+
+            if ('Ad' in vast and 'Wrapper' in vast['Ad']):
+                adUrl = vast['Ad']['Wrapper']['VASTAdTagURI']
+                logging.debug('Advertisement config has redirect wrapper, loading %s' % adUrl)
+                return getVast(adUrl)
+            else:
+                return vast
+
+       
+        args = {
+            'vastSite': self.vastSite,
+            'vastPlayer': self.vastPlayer,
+            'mediaPath': path,
+            'timestamp': str(int(time.time())),
+            'get_device_path': '',
+            'get_page_ord': random.randint(0,10000000000000000),
+            'get_player_ad_count': 1,
+            'krux_user': 'IdcTtCbD',
+            'krux_segment': ''
+        }
+        
+        if not adConfigUrl:
+            if not self.movideoAdvertisingConfig: 
+                self.getApplication()
+            adConfigUrl = self.movideoAdvertisingConfig.url
+
+        adConfigUrl = adConfigUrl.replace('javascript:', '').format(**args)
+        return getVast(adConfigUrl)
         
     def getApplication(self):
         self.movideoApplication = self.movideoApiClient.Application.application()
@@ -135,9 +165,24 @@ class NetworkTenVideo:
     def getRootPlaylist(self):
         return self.getPlaylist(self.movideoRootPlaylistId)
         
-    def getMedia(self, mediaId):
+    def getMedia(self, mediaId, bitrate=None):
         if not self.movideoApplicationConfig: 
             self.getApplication()
-        mediaAuth = self.movideoApiClient.Media.authorise(mediaId)
-        encodingProfile = mediaAuth['media']['encodingProfiles']['encodingProfile'][-1] #use last encoding profile, usually best quality
-        return {'host': self.movideoApplicationConfig.connectionHostName, 'app': 'ondemand?ovpfv=2.1.4&auth=%s&aifp=1710&slist=%s' % (mediaAuth['authorisationToken']['token'], mediaAuth['authorisationToken']['url']), 'swfUrl': self.swfUrl, 'swfVfy': True, 'pageUrl': self.pageUrl, 'playpath': 'mp4:%s%s-%sx%s.f4v?null' % (mediaAuth['authorisationToken']['url'], encodingProfile['videoBitrate'], encodingProfile['width'], encodingProfile['height']), 'filename': mediaAuth['media']['filename'], 'name': mediaAuth['media']['filename'].split('.',1)[0], 'media':mediaAuth['media']}
+        media = self.movideoApiClient.Media.getMedia(mediaId)
+        logging.debug('Media: %s' % repr(media))
+
+        smil = self.movideoApiClient.Media.smil(mediaId)
+        logging.debug('Media SMIL: %s' % repr(smil))
+
+        renditions = [(int(vid["system-bitrate"]), vid) for vid in smil["body"]["switch"]["video"]]
+        if bitrate: # go for closest to requested
+            renditions = sorted(renditions, key=lambda r: abs(r[0] - int(bitrate)))
+        else: # go for highest
+            renditions = sorted(renditions, reverse=True)
+        logging.debug('Renditions (sorted in order of preference): %s', repr(renditions))
+
+        base = urlparse.urlparse(smil['head']['base'])
+        app = base.path
+        if app.startswith('/'):
+            app = app[1:]
+        return {'host': base.netloc, 'app': "%s?%s&%s" % (app, base.query, smil['head']['auth']), 'swfUrl': self.swfUrl, 'swfVfy': True, 'pageUrl': self.pageUrl, 'playpath': renditions[0][1]['src'], 'filename': media['filename'], 'name': media['filename'].split('.',1)[0], 'media': media}

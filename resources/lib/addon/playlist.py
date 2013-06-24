@@ -35,31 +35,56 @@ from NetworkTenVideo import NetworkTenVideo
 utils.handle_logger(logging.getLogger())
 
 class Main:
-    def __init__( self ): 
+    def __init__( self, params ): 
         # parse arguments and init ten client
-        params = self._parse_argv()
-        self.tenClient = NetworkTenVideo(token=params['token'])
+        token = None
+        if ('token' in params):
+            token = params['token'][0]
+        self.tenClient = NetworkTenVideo()
         
         # get playlist
-        if params['playlistId'] == "default":
+        if not 'playlistId' in params or not params['playlistId'] or params['playlistId'] == "default":
             playlist = self.tenClient.getRootPlaylist()
         else:
-            playlist = self.tenClient.getPlaylist(params['playlistId'])
+            playlist = self.tenClient.getPlaylist(params['playlistId'][0])
         
+        # get existing path
+        if 'path' in params:
+            path = params['path'][0]
+        else:
+            path = ''
+
         # extract tags and use playlist code for path (used for tracking)
         tags = self.tenClient.parsePlaylistForTags(playlist)
-        if (tags.has_key('playlist:code')):
-            params['path'] += tags['playlist:code'] + '/'
+        logging.debug('Playlist Tags: %s' % repr(tags))
+        if 'playlist:code' in tags:
+            logging.debug('adding playlist code to path: %s' % tags['playlist:code'])
+            path += tags['playlist:code'] + '/'
         
+        urlArgs = {
+            'path': path,
+            'token': self.tenClient.getToken()
+        }
+
+        if 'advertisingConfig' in playlist:
+            if playlist['advertisingConfig']['advertisingPolicy']['initialMedia'] != 'm':
+                urlArgs['adConfigUrl'] = playlist['advertisingConfig']['url']
+                urlArgs['showAds'] = '1'
+            else:
+                urlArgs['showAds'] = '0'
+
         # check if the playlist has children, and display them if so
         if (type(playlist['childPlaylists']) != str and len(playlist['childPlaylists']['playlist'])>0):
             for childPlaylist in playlist['childPlaylists']['playlist']:
-                xbmcplugin.addDirectoryItem(handle=int( sys.argv[ 1 ] ),listitem=xbmcgui.ListItem(self._parse_title(childPlaylist['title'])),url="%s?playlistId=%s&path=%s&token=%s" % ( sys.argv[0], childPlaylist['id'], params['path'], self.tenClient.getToken()), isFolder=True, totalItems=len(playlist['childPlaylists']['playlist']))
+                urlArgs['playlistId'] = childPlaylist['id']
+                xbmcplugin.addDirectoryItem(handle=int( sys.argv[ 1 ] ),listitem=xbmcgui.ListItem(self._parse_title(childPlaylist['title'])),url="%s?action=playlist&%s" % ( sys.argv[0], urllib.urlencode(urlArgs)), isFolder=True, totalItems=len(playlist['childPlaylists']['playlist']))
         elif (type(playlist['mediaList']) != str and len(playlist['mediaList']['media'])>0):
             for item in playlist['mediaList']['media']:
                 listitem = xbmcgui.ListItem(item['title'],thumbnailImage=item['imagePath'] + 'cropped/128x72.png')
                 listitem.setInfo( "video", {'title': item['title'], 'studio': item['creator'], 'plot': item['description']} )
-                xbmcplugin.addDirectoryItem(handle=int( sys.argv[ 1 ] ),listitem=listitem,url="%s?mediaIds=%s&path=%s&token=%s" % ( sys.argv[0], item['id'], params['path'], self.tenClient.getToken()), totalItems=len(playlist['mediaList']['media']))
+                listitem.setProperty('IsPlayable', 'true')
+                urlArgs['mediaIds'] = item['id']
+                xbmcplugin.addDirectoryItem(handle=int( sys.argv[ 1 ] ),listitem=listitem,url="%s?action=download&%s" % ( sys.argv[0], urllib.urlencode(urlArgs)), totalItems=len(playlist['mediaList']['media']))
             
             # episode part stacking disabled until we can figure out how to call python in between parts to refresh the auth token
             # parse the playlist for episodes then loop through the reverse sorted items array
@@ -80,20 +105,6 @@ class Main:
             #    xbmcplugin.addDirectoryItem(handle=int( sys.argv[ 1 ] ),listitem=listitem,url="%s?mediaIds=%s&path=%s&token=%s" % ( sys.argv[0], mediaIds, params['path'], self.tenClient.getToken()), totalItems=len(episodes))
             
         xbmcplugin.endOfDirectory( handle=int( sys.argv[ 1 ] ), succeeded=1 )
-        
-    def _parse_argv( self ):
-        try:
-            # parse sys.argv for params and return result
-            params = dict( urllib.unquote_plus( arg ).split( "=" ) for arg in sys.argv[ 2 ][ 1 : ].split( "&" ) )
-        except:
-            # no params passed
-            params = { "playlistId": "default"}
-        if not params.has_key('path'):
-            params['path'] = ''
-        if not params.has_key('token'):
-            params['token'] = None
-        print repr(params)
-        return params
         
     def _parse_title( self, title ):
         split = title.split('|',1)

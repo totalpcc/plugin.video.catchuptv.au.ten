@@ -34,51 +34,64 @@ from NetworkTenVideo import NetworkTenVideo
 
 utils.handle_logger(logging.getLogger())
 
+SHOW_ADS = True
+
 class Main:
-    def __init__( self ): 
+    def __init__( self, params ): 
         # parse arguments and init ten client
-        params = self._parse_argv()
-        self.tenClient = NetworkTenVideo(token=params['token'])
+        token = None
+        if 'token' in params:
+            token = params['token'][0]
+        self.tenClient = NetworkTenVideo(token=token)
         
         # extract media ids then loop through each, adding to stack url
-        mediaIds = params['mediaIds'].split(',')
-        print 'DEBUG: there are %s parts, will try to create a stack url' % len(mediaIds)
-        url = 'stack://'
+        mediaIds = params['mediaIds'][0].split(',')
+        logging.debug('there are %s parts, will try to create a stack url' % len(mediaIds))
+        mediaUrls = []
         for mediaId in mediaIds:
             # Get media and rtmp args
             media = self.tenClient.getMedia(mediaId)
             rtmpUrl = 'rtmpe://%s app=%s playpath=%s swfUrl=%s swfVfy=true pageUrl=%s' % (media['host'], media['app'], media['playpath'], media['swfUrl'], media['pageUrl'])
-            print 'Using rtmpe url, %s' % rtmpUrl
+            logging.debug('Using rtmpe url, %s' % rtmpUrl)
             
-            # Extract media tags and create adPath
-            tags = self.tenClient.parsePlaylistForTags(media['media'])
-            print repr(tags)
-            if (tags.has_key('clip:code')):
-                adPath = params['path'] + tags['clip:code']
-            else:
-                adPath = params['path'] + media['name']
-            
-            # Get advertisement
-            adConfig = self.tenClient.getAds(adPath)
-            adUrl = adConfig['VideoAdServingTemplate']['Ad']['InLine']['Video']['MediaFiles']['MediaFile']['URL']
-            print 'Found advertisement, will show %s' % adUrl
-            
-            # add urls to stack
-            url += adUrl + ' , ' + rtmpUrl + ' , '
-        url = url[0:-3] # remove last comma from stack
-        print 'Final stack url, %s' % url
-        xbmc.Player(xbmc.PLAYER_CORE_AUTO).play(url, xbmcgui.ListItem(media['media']['title'], thumbnailImage=media['media']['imagePath'] + 'cropped/128x72.png'))
-        
-    def _parse_argv( self ):
-        try:
-            # parse sys.argv for params and return result
-            params = dict( urllib.unquote_plus( arg ).split( "=" ) for arg in sys.argv[ 2 ][ 1 : ].split( "&" ) )
-        except:
-            # no params passed
-            params = {}
-        if not params.has_key('path'):
-            params['path'] = ''
-        if not params.has_key('token'):
-            params['token'] = None
-        print repr(params)
-        return params
+            if SHOW_ADS and params['showAds'][0] != '0':
+                # Extract media tags and create adPath
+                tags = self.tenClient.parsePlaylistForTags(media['media'])
+                logging.debug('Media Tags: %s' % repr(tags))
+                if 'clip:code' in tags:
+                    adPath = params['path'][0] + tags['clip:code']
+                else:
+                    adPath = params['path'][0] + media['name']
+                
+                # Use config url from parameters if set, otherwise leave as None to use default
+                adConfigUrl = None
+                if 'adConfigUrl' in params:
+                    adConfigUrl = params['adConfigUrl'][0]
+                    logging.debug('Using alternate ad config url: %s' % adConfigUrl)
+
+                # Get advertisement config and find ad video url
+                adConfig = self.tenClient.getAds(adPath, adConfigUrl)
+                if 'Ad' in adConfig:
+                    for creative in adConfig['Ad']['InLine']['Creatives']['Creative']:
+                        if 'Linear' in creative and 'MediaFiles' in creative['Linear']:
+                            mediaFile = creative['Linear']['MediaFiles']['MediaFile']
+                            if not '_text' in mediaFile:
+                                logging.debug('Multiple renditions of the same ad, blindly choosing the first one')
+                                mediaFile = mediaFile[0]
+                            adVideoUrl = mediaFile['_text']
+                            logging.debug('Found advertisement, will show %s' % adVideoUrl)
+                            mediaUrls.append(str(adVideoUrl))
+                            break
+
+            # add media url to stack
+            mediaUrls.append(rtmpUrl)
+
+        # TODO: perhaps a Playlist than a stack is better for this?
+        url = 'stack://%s' % ' , '.join(mediaUrls)
+        logging.debug('Final stack url, %s' % url)
+        listitem = xbmcgui.ListItem(path=url)
+        # make sure that the original ListItem is set to IsPlayable otherwise you will get handle errors here
+        xbmcplugin.setResolvedUrl(handle=int(sys.argv[1]), succeeded=True, listitem=listitem)
+
+        #listitem = xbmcgui.ListItem(media['media']['title'], thumbnailImage=media['media']['imagePath'] + 'cropped/128x72.png')
+        #xbmc.Player(xbmc.PLAYER_CORE_AUTO).play(url, listitem)
