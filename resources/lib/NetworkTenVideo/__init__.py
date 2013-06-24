@@ -26,24 +26,7 @@ import re
 import time
 from movideoApiClient import movideoApiClient
 from RestClient import RestClient
-
-CHANNELS = {
-    "Ten" : (
-                'main-player',
-                'movideoNetwork10',
-                41326,
-            ),
-    "One" : (
-                'onehd-cutv-universal-flash',
-                'movideoOneHd',
-                45290,
-            ),
-    "Eleven" : (
-                'eleven',
-                'movideoEleven',
-                43712,
-            ),
-}
+from channels import CHANNELS
 
 class NetworkTenVideo:
     defaultHeaders = {
