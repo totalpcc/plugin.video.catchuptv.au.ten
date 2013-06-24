@@ -44,10 +44,10 @@ import importlib
 import utils
 
 # Dynamically load module
-def loadModule(moduleName):
+def loadModule(moduleName, params):
   utils.log('Loading %s module' % moduleName)
   module = importlib.import_module('.%s' % moduleName, 'addon')
-  module.Main()
+  module.Main(params)
 
 # Display a XBMC error dialog
 def errorDialog(err):
@@ -61,18 +61,19 @@ if ( __name__ == "__main__" ):
   utils.log('Initialised addon with arguments: %s' % repr(sys.argv))
 
   if ( len(sys.argv) != 3 or not sys.argv[ 2 ] ):
-    loadModule('playlist')
+    loadModule('playlist', {})
   else:
     qs = sys.argv[ 2 ]
     if ( qs.startswith('?') ):
       qs = qs[1:]
     params = urlparse.parse_qs(qs)
+    utils.log('Parsed Parameters: %s' % repr(params))
     if ( 'action' in params and len(params['action']) == 1 and params['action'][0]):
       try:
-        loadModule(params['action'][0])
+        loadModule(params['action'][0], params)
       except:
         errorDialog('An error occured. Check the log for details.')
         utils.log_error()
     else:
       utils.log('Warning: Un-handled query string, loading playlist')
-      loadModule('playlist')
+      loadModule('playlist', params)
