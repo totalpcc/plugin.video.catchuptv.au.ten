@@ -1,131 +1,102 @@
+#
+#   Network Ten CatchUp TV Video Addon
+#
+#   Copyright (c) 2013 Adam Malcontenti-Wilson
+# 
+#   Permission is hereby granted, free of charge, to any person obtaining a copy
+#   of this software and associated documentation files (the "Software"), to deal
+#   in the Software without restriction, including without limitation the rights
+#   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+#   copies of the Software, and to permit persons to whom the Software is
+#   furnished to do so, subject to the following conditions:
+# 
+#   The above copyright notice and this permission notice shall be included in
+#   all copies or substantial portions of the Software.
+# 
+#   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+#   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+#   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+#   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+#   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+#   THE SOFTWARE.
+#
+
 import sys
 import re
+import logging
+import urllib
 import xbmcgui
 import xbmcplugin
-import urllib
-import xml.etree.ElementTree
-import time
-import urllib2
-import htmlentitydefs
+from deps.NetworkTenVideo import NetworkTenVideo
 
-def unescape(text):
-    def fixup(m):
-        text = m.group(0)
-        if text[:2] == "&#":
-            # character reference
-            try:
-                if text[:3] == "&#x":
-                    return unichr(int(text[3:-1], 16))
-                else:
-                    return unichr(int(text[2:-1]))
-            except ValueError:
-                pass
-        else:
-            # named entity
-            try:
-                text = unichr(htmlentitydefs.name2codepoint[text[1:-1]])
-            except KeyError:
-                pass
-        return text # leave as is
-    return re.sub("&#?\w+;", fixup, text)
-    
+# Un-comment for verbose debugging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s: [%(filename)s:%(lineno)d] %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+
 class Main:
-    BASE_CURRENT_URL = "http://publish.flashapi.vx.roo.com/PlaylistInfoService.asmx"
-    BITRATE = 700
-    SOAP_XML = '<?xml version="1.0" encoding="utf-8"?><SOAP-ENV:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"><SOAP-ENV:Body><GetPlaylistXMLGeo xmlns="http://tempuri.org/"><SiteIdGuid>%s</SiteIdGuid><Channel>%s</Channel><Bitrate>%s</Bitrate><Format>flash</Format><ThumbnailTypeCode>square_small</ThumbnailTypeCode><RowCount>50</RowCount><StartPosition>0</StartPosition><ClipId></ClipId><Artist></Artist><Album></Album><Criteria></Criteria><RelatedLinksKeyName>ALL</RelatedLinksKeyName><GeoCountry>AUSTRALIA</GeoCountry><GeoRegion>VICTORIA</GeoRegion><GeoCity>MELBOURNE</GeoCity><GeoTimeZone>+10:00</GeoTimeZone></GetPlaylistXMLGeo></SOAP-ENV:Body></SOAP-ENV:Envelope>'
-    def __init__( self ):
+    def __init__( self ): 
+        # parse arguments and init ten client
         params = self._parse_argv()
-        data = self.SOAP_XML % (params["menuId"],params["playlistId"],self.BITRATE)
-        playlistUrl = self.BASE_CURRENT_URL
-        playlistReq = urllib2.Request(playlistUrl,data,{"Content-Type": "text/xml"})
-        response = urllib2.urlopen(playlistReq)
-        xmlStr = response.read()
-        m = re.search(u'(&lt;\?xml.+?)</GetPlaylistXMLGeoResult>',xmlStr,re.DOTALL)
-        if len(m.group(1)) == 0: raise
-        playlistXml = unescape(m.group(1).decode('utf-8'))
-        print playlistXml.encode('utf-8')
-        playlist = xml.etree.ElementTree.fromstring(playlistXml.encode('utf-8'))
-        videos = playlist.findall("PlaylistItem")
-        episodes = dict()
-        for video in videos: 
-            # Part detection method 1
-            # Look for (1/6) at END of title
-            m = re.search('^(.+?)\(([0-9]+?)\/([0-9]+?)\)$',video.findtext("Name"))
-            if (m != None):
-                title = m.group(1)
-                description = video.findtext("Description")
-                part = m.group(2)
-                totalParts = m.group(3)
-            # Part detection method 2
-            # Look for (1/6) at START of description
-            else:
-                m = re.search('^\(([0-9]+?)\/([0-9]+?)\)(.*)$',video.findtext("Description"))
-                if (m != None):
-                    title = video.findtext("Name")
-                    description = m.group(3)
-                    part = m.group(1)
-                    totalParts = m.group(2)
-                else:
-                    # Part detection method 3
-                    # Look for "Part 2" or "seg 2" in title
-                    m = re.search('^(.*?)(?:\s*-\s*)?(?:[pP]art|seg)\s+?([0-9]+)(.*?)$',video.findtext("Name"))
-                    if (m != None):
-                        title = m.group(1) + " " + m.group(3)
-                        description = video.findtext("Description")
-                        part = m.group(2)
-                    # Give up detecting parts, assume only 1
-                    else:
-                        title = video.findtext("Name")
-                        description = video.findtext("Description")
-                        part = 1
-                        totalParts = 1
-            
-            if not episodes.has_key(title):
-                episodes[title] = dict()
-                episodes[title]["url"] = "stack://"
-            episodes[title]["title"] = title
-            episodes[title]["description"] = description
-            episodes[title]["lastPart"] = part
-            episodes[title]["totalParts"] = totalParts
-            episodes[title]["url"] += video.findtext("StreamUrl") + " , "
-            
-            if not episodes[title].has_key("thumbnail"):
-                for img in video.findall("Thumbnails/Thumbnail"):
-                    if (img.get("type") == "wide_large" and len(img.text)>0):
-                        episodes[title]["thumbnail"] = img.text
-                        break
-            if not episodes[title].has_key("date"):
-                episodes[title]["date"] = time.strptime(video.findtext("Date"),"%a, %d %b %Y %H:%M:%S %Z")
+        self.tenClient = NetworkTenVideo(token=params['token'])
         
-        for key in episodes:
-            episode = episodes[key]
-            listItm = xbmcgui.ListItem(episode["title"])
-            if episode.has_key("thumbnail") and len(episode["thumbnail"])>0:
-                listItm.setThumbnailImage(episode["thumbnail"])
+        # get playlist
+        if params['playlistId'] == "default":
+            playlist = self.tenClient.getRootPlaylist()
+        else:
+            playlist = self.tenClient.getPlaylist(params['playlistId'])
+        
+        # extract tags and use playlist code for path (used for tracking)
+        tags = self.tenClient.parsePlaylistForTags(playlist)
+        if (tags.has_key('playlist:code')):
+            params['path'] += tags['playlist:code'] + '/'
+        
+        # check if the playlist has children, and display them if so
+        if (type(playlist['childPlaylists']) != str and len(playlist['childPlaylists']['playlist'])>0):
+            for childPlaylist in playlist['childPlaylists']['playlist']:
+                xbmcplugin.addDirectoryItem(handle=int( sys.argv[ 1 ] ),listitem=xbmcgui.ListItem(self._parse_title(childPlaylist['title'])),url="%s?playlistId=%s&path=%s&token=%s" % ( sys.argv[0], childPlaylist['id'], params['path'], self.tenClient.getToken()), isFolder=True, totalItems=len(playlist['childPlaylists']['playlist']))
+        elif (type(playlist['mediaList']) != str and len(playlist['mediaList']['media'])>0):
+            for item in playlist['mediaList']['media']:
+                listitem = xbmcgui.ListItem(item['title'],thumbnailImage=item['imagePath'] + 'cropped/128x72.png')
+                listitem.setInfo( "video", {'title': item['title'], 'studio': item['creator'], 'plot': item['description']} )
+                xbmcplugin.addDirectoryItem(handle=int( sys.argv[ 1 ] ),listitem=listitem,url="%s?mediaIds=%s&path=%s&token=%s" % ( sys.argv[0], item['id'], params['path'], self.tenClient.getToken()), totalItems=len(playlist['mediaList']['media']))
             
-            try:
-                listItm.setInfo("video",{'date': time.strftime("%d.%m.%Y",episode["date"]),'year':int(time.strftime("%Y",episode["date"])),'plot':episode["description"]})
-            except: pass
-            xbmcplugin.addDirectoryItem(handle=int( sys.argv[ 1 ] ),
-                listitem=listItm,
-                url=episode["url"][0:-3],  # removes the last comma from the stack url
-                totalItems=len(episodes))
-            print "Adding url " + episode["url"][0:-3]
-        #xbmcplugin.addDirectoryItem(handle=int( sys.argv[ 1 ] ),listitem=xbmcgui.ListItem(menu.findtext("title")),url=sys.argv[ 0 ])
-        #xbmcplugin.addSortMethod( handle=int(sys.argv[1], sortMethod=xbmcplugin.SORT_METHOD_DATE))
+            # episode part stacking disabled until we can figure out how to call python in between parts to refresh the auth token
+            # parse the playlist for episodes then loop through the reverse sorted items array
+            #episodes = self.tenClient.parsePlaylistForEpisodes(playlist)
+            #for episode in sorted(episodes.items(),reverse=True):
+            #    curEpisode = episode[1]
+            #    print repr(curEpisode)
+            #    
+            #    # extract the mediaIds for the episode
+            #    mediaIds = ''
+            #    for i in sorted(curEpisode['media']):
+            #        mediaIds += curEpisode['media'][i]['id'] + ','
+            #    mediaIds = mediaIds[0:-1] # truncate last comma
+            #    
+            #    # add directory item
+            #    listitem = xbmcgui.ListItem(self._parse_title(curEpisode['title']))
+            #    listitem.setInfo( "video", {'title': curEpisode['title']} )
+            #    xbmcplugin.addDirectoryItem(handle=int( sys.argv[ 1 ] ),listitem=listitem,url="%s?mediaIds=%s&path=%s&token=%s" % ( sys.argv[0], mediaIds, params['path'], self.tenClient.getToken()), totalItems=len(episodes))
+            
         xbmcplugin.endOfDirectory( handle=int( sys.argv[ 1 ] ), succeeded=1 )
         
     def _parse_argv( self ):
-        # parse sys.argv for params and return result
-        params = dict( urllib.unquote_plus( arg ).split( "=" ) for arg in sys.argv[ 2 ][ 1 : ].split( "&" ) )
-        # we need to do this as quote_plus and unicode do not work well together
-        #params[ "category" ] = eval( params[ "category" ] )
-        params["playlistId"] = urllib.unquote_plus(params["playlistId"])
-        # return params
+        try:
+            # parse sys.argv for params and return result
+            params = dict( urllib.unquote_plus( arg ).split( "=" ) for arg in sys.argv[ 2 ][ 1 : ].split( "&" ) )
+        except:
+            # no params passed
+            params = { "playlistId": "default"}
+        if not params.has_key('path'):
+            params['path'] = ''
+        if not params.has_key('token'):
+            params['token'] = None
+        print repr(params)
         return params
         
-    def _fetch_url( self, url ):
-        sock = urllib.urlopen(url)
-        data = sock.read()
-        sock.close()
-        return data
+    def _parse_title( self, title ):
+        split = title.split('|',1)
+        if (len(split) == 2):
+            return split[1].strip()
+        else:
+            return title.strip()
