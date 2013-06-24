@@ -27,23 +27,41 @@ import time
 from movideoApiClient import movideoApiClient
 from RestClient import RestClient
 
+CHANNELS = {
+    "Ten" : (
+                'main-player',
+                'movideoNetwork10',
+                41326,
+            ),
+    "One" : (
+                'onehd-cutv-universal-flash',
+                'movideoOneHd',
+                45290,
+            ),
+    "Eleven" : (
+                'eleven',
+                'movideoEleven',
+                43712,
+            ),
+}
+
 class NetworkTenVideo:
     defaultHeaders = {
         'User-Agent': 'Mozilla/5.0 (compatible; U; en-AU) NetworkTenVideoAPIClient/0.1',
         'Referer': 'http://apps.v2.movideo.com/client/ten/main-player/flash/video_directory.swf'
         }
-    movideoApplicationAlias = 'main-player'
     movideoApplicationConfig = None
-    movideoApiKey = 'movideoNetwork10'
-    movideoRootPlaylistId = 41326
     swfUrl = 'http://apps.v2.movideo.com/player/flash/movideo_player.swf?v=1.8'
     pageUrl = 'http://ten.com.au/video-player.htm'
     vastSite = 'tendigital'
     vastPlayer = 'TEN'
     
-    def __init__(self, headers=None, token=None):
+    def __init__(self, networkId=None, headers=None, token=None):
         if (headers == None):
             headers = self.defaultHeaders
+        if (networkId == None):
+            networkId = 'Ten'
+        self.movideoApplicationAlias, self.movideoApiKey, self.movideoRootPlaylistId = CHANNELS[networkId]
         self.movideoApiClient = movideoApiClient(application_alias=self.movideoApplicationAlias, api_key=self.movideoApiKey, headers=headers, token=token)
     
     def parsePlaylistForEpisodes(self, playlist):
