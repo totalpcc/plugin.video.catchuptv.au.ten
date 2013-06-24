@@ -21,8 +21,18 @@
 #   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 #   THE SOFTWARE.
 #
+#   This file includes portions from xbmc-addon-abc-iview
+#   Copyright (C) 2012 Andy Botting
+#
 
 import config
 
 def log(s):
   print "[%s v%s] %s" % (config.NAME, config.VERSION, s)
+
+def log_error(message=None):
+  exc_type, exc_value, exc_traceback = sys.exc_info()
+  if message:
+    exc_value = message
+  print "[%s v%s] ERROR: %s (%d) - %s" % (config.NAME, config.VERSION, exc_traceback.tb_frame.f_code.co_name, exc_traceback.tb_lineno, exc_value)
+  print traceback.print_exc()

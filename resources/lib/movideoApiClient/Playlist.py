@@ -24,10 +24,14 @@
 
 import string
 import logging
+
 try:
-    import json
+    import deps.simplejson as json
 except ImportError:
-    import simplejson as json
+    try:
+        import json
+    except ImportError:
+        import simplejson as json
 
 class Playlist:
     def __init__(self,parent):

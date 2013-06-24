@@ -33,15 +33,18 @@ except:
 
 sys.path.append(os.path.join(current_dir, 'resources', 'lib'))
 
-import utils, playlist, download
+import utils
+import addon.playlist, addon.download
 
 if ( __name__ == "__main__" ):
     
   utils.log('Initialised addon, query string: %s' % sys.argv[2])
 
   if ( not sys.argv[ 2 ] ):
-    playlist.Main()
+    addon.playlist.Main()
   elif ( sys.argv[ 2 ].startswith( "?playlistId=" ) ):
-    playlist.Main()
+    addon.playlist.Main()
   elif ( sys.argv[ 2 ].startswith( "?mediaIds=" ) ):
-    download.Main()
+    addon.download.Main()
+  else:
+    utils.log_error('Un-handled query string')
