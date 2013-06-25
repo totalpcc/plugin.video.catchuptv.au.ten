@@ -27,3 +27,4 @@ import version
 
 NAME = 'Network Ten CatchUp TV'
 VERSION = version.VERSION
+BUGREPORT_URL = 'https://github.com/xbmc-catchuptv-au/plugin.video.catchuptv.au.ten/issues'

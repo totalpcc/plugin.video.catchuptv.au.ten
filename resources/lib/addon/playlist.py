@@ -38,9 +38,9 @@ class Main:
     def __init__( self, params ): 
         # parse arguments and init ten client
         token = None
-        if ('token' in params):
+        if 'token' in params:
             token = params['token'][0]
-        self.tenClient = NetworkTenVideo()
+        self.tenClient = NetworkTenVideo(token=token)
         
         # get playlist
         if not 'playlistId' in params or not params['playlistId'] or params['playlistId'] == "default":
