@@ -1,12 +1,5 @@
 [B]Version master[/B]
+- Update changelog.txt
+- part stacking, metadata improvements
 - fix token bug
 
-[B]Version 0.3.0[/B]
-- fixes
-- move development to GitHub
-
-[B]Version 0.2.0[/B]
-- move to movideo CDN
-
-[B]Version 0.1.0[/B]
-- Initial commit to xbmc-catchuptv-au-repo

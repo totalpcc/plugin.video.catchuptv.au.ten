@@ -70,11 +70,7 @@ class Main:
         }
 
         if 'advertisingConfig' in playlist:
-            if playlist['advertisingConfig']['advertisingPolicy']['initialMedia'] != 'm':
-                urlArgs['adConfigUrl'] = playlist['advertisingConfig']['url']
-                urlArgs['showAds'] = '1'
-            else:
-                urlArgs['showAds'] = '0'
+            urlArgs['showAds'] = playlist['advertisingConfig']['advertisingPolicy']['initialMedia'].count('a')
 
         # check if the playlist has children, and display them if so
         if (type(playlist['childPlaylists']) != str and len(playlist['childPlaylists']['playlist'])>0):
