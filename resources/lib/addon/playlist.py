@@ -25,13 +25,15 @@
 import sys
 import re
 import logging
+import datetime
 import urllib
 import xbmcgui
 import xbmcplugin
 import utils
 from NetworkTenVideo import NetworkTenVideo
 
-# Un-comment for verbose debugging
+PART_STACKING = True
+
 utils.handle_logger(logging.getLogger())
 
 class Main:
@@ -47,6 +49,7 @@ class Main:
             playlist = self.tenClient.getRootPlaylist()
         else:
             playlist = self.tenClient.getPlaylist(params['playlistId'][0])
+        logging.debug('Playlist: %s' % repr(playlist))
         
         # get existing path
         if 'path' in params:
@@ -75,36 +78,97 @@ class Main:
 
         # check if the playlist has children, and display them if so
         if (type(playlist['childPlaylists']) != str and len(playlist['childPlaylists']['playlist'])>0):
-            for childPlaylist in playlist['childPlaylists']['playlist']:
-                urlArgs['playlistId'] = childPlaylist['id']
-                xbmcplugin.addDirectoryItem(handle=int( sys.argv[ 1 ] ),listitem=xbmcgui.ListItem(self._parse_title(childPlaylist['title'])),url="%s?action=playlist&%s" % ( sys.argv[0], urllib.urlencode(urlArgs)), isFolder=True, totalItems=len(playlist['childPlaylists']['playlist']))
+            def display_child_playlist( childPlaylist, total ):
+                title = self._parse_title(childPlaylist['title'])
+                childTags = self.tenClient.parsePlaylistForTags(childPlaylist)
+                logging.debug('Found child playlist "%s" with tags: %s' % (title, repr(childTags)))
+                
+                if not 'external:link' in childTags:
+                    urlArgs['playlistId'] = childPlaylist['id']
+
+                    if 'Full Episodes' in title:
+                        urlArgs['listType'] = 'episodes'
+                    else:
+                        urlArgs['listType'] = 'tvshows'
+                    listitem = xbmcgui.ListItem(title)
+                    if 'description' in childPlaylist:
+                        listitem.setInfo('video', { 'plot' : childPlaylist['description'] })
+                    xbmcplugin.addDirectoryItem( handle=int( sys.argv[ 1 ] ), listitem=listitem, url="%s?action=playlist&%s" % ( sys.argv[0], urllib.urlencode(urlArgs)), isFolder=True, totalItems=total)
+                else:
+                    logging.debug('Ignoring playlist "%s" as contains external:link=%s' % (title, childTags['external:link']))
+
+            if (type(playlist['childPlaylists']['playlist']) == list):
+                for childPlaylist in playlist['childPlaylists']['playlist']:
+                    display_child_playlist(childPlaylist, len(playlist['childPlaylists']['playlist']))
+            else:
+                display_child_playlist(playlist['childPlaylists']['playlist'], 1)
+
         elif (type(playlist['mediaList']) != str and len(playlist['mediaList']['media'])>0):
-            for item in playlist['mediaList']['media']:
-                listitem = xbmcgui.ListItem(item['title'],thumbnailImage=item['imagePath'] + 'cropped/128x72.png')
-                listitem.setInfo( "video", {'title': item['title'], 'studio': item['creator'], 'plot': item['description']} )
-                listitem.setProperty('IsPlayable', 'true')
-                urlArgs['mediaIds'] = item['id']
-                xbmcplugin.addDirectoryItem(handle=int( sys.argv[ 1 ] ),listitem=listitem,url="%s?action=download&%s" % ( sys.argv[0], urllib.urlencode(urlArgs)), totalItems=len(playlist['mediaList']['media']))
-            
-            # episode part stacking disabled until we can figure out how to call python in between parts to refresh the auth token
-            # parse the playlist for episodes then loop through the reverse sorted items array
-            #episodes = self.tenClient.parsePlaylistForEpisodes(playlist)
-            #for episode in sorted(episodes.items(),reverse=True):
-            #    curEpisode = episode[1]
-            #    print repr(curEpisode)
-            #    
-            #    # extract the mediaIds for the episode
-            #    mediaIds = ''
-            #    for i in sorted(curEpisode['media']):
-            #        mediaIds += curEpisode['media'][i]['id'] + ','
-            #    mediaIds = mediaIds[0:-1] # truncate last comma
-            #    
-            #    # add directory item
-            #    listitem = xbmcgui.ListItem(self._parse_title(curEpisode['title']))
-            #    listitem.setInfo( "video", {'title': curEpisode['title']} )
-            #    xbmcplugin.addDirectoryItem(handle=int( sys.argv[ 1 ] ),listitem=listitem,url="%s?mediaIds=%s&path=%s&token=%s" % ( sys.argv[0], mediaIds, params['path'], self.tenClient.getToken()), totalItems=len(episodes))
-            
+            if PART_STACKING:
+                # parse the playlist for episodes then loop through the reverse sorted items array
+                episodes = self.tenClient.parsePlaylistForEpisodes(playlist)
+                for episode in sorted(episodes.items(),reverse=True):
+                    title = episode[0]
+                    curEpisode = episode[1]
+                    media = curEpisode['media']
+                    mediaIds = []
+                    duration = 0.0
+                    firstMedia = media[media.keys()[0]]
+                    logging.debug('Found episode: %s, %s media items' % (title, len(media)))
+
+                    for i in sorted(curEpisode['media']):
+                        mediaIds.append(curEpisode['media'][i]['id'])
+                        duration += float(curEpisode['media'][i]['duration'])
+
+                    listitem = xbmcgui.ListItem(curEpisode['title'], thumbnailImage=firstMedia['imagePath'] + '600x338.jpg')
+                    listitem.setInfo('video', self._get_xbmc_list_item(title, curEpisode['description'], firstMedia))
+                    listitem.setProperty('IsPlayable', 'true')
+                    listitem.addStreamInfo('video', {'duration': duration})
+                    urlArgs['mediaIds'] = ','.join(mediaIds)
+                    xbmcplugin.addDirectoryItem(handle=int( sys.argv[ 1 ] ),listitem=listitem,url="%s?action=download&%s" % ( sys.argv[0], urllib.urlencode(urlArgs)), totalItems=len(episodes))
+            else:
+                # just add each item in the playlist individually
+                for item in playlist['mediaList']['media']:
+                    listitem = xbmcgui.ListItem(item['title'], thumbnailImage=item['imagePath'] + '600x338.jpg')
+                    listitem.setInfo( "video", self._get_xbmc_list_item(item['title'], item['description'], item))
+                    listitem.setProperty('IsPlayable', 'true')
+                    listitem.addStreamInfo('video', {'duration': duration})
+                    urlArgs['mediaIds'] = item['id']
+                    xbmcplugin.addDirectoryItem(handle=int( sys.argv[ 1 ] ),listitem=listitem,url="%s?action=download&%s" % ( sys.argv[0], urllib.urlencode(urlArgs)), totalItems=len(playlist['mediaList']['media']))
+
+        if 'listType' in params and params['listType']:
+            xbmcplugin.setContent( handle=int( sys.argv[ 1 ] ), content=params['listType'][0] )
         xbmcplugin.endOfDirectory( handle=int( sys.argv[ 1 ] ), succeeded=1 )
+
+    def _get_xbmc_list_item( self, title, description, media ):
+        info_dict = {'title': title, 'plot': description}
+        tags = self.tenClient.parsePlaylistForTags(media)
+        m = re.search('Ep\.?\s*([0-9]+)', title)
+        if m is not None:
+            info_dict['episode'] = m.group(1)
+        if 'show:name' in tags:
+            info_dict['tvshowtitle'] = tags['show:name']
+        if 'show:genre' in tags:
+            info_dict['genre'] = tags['show:genre']
+        if 'show:production_number' in tags:
+            info_dict['season'] = tags['show:production_number']
+        if 'series:number' in tags:
+            info_dict['season'] = tags['series:number']
+        if 'classification:value' in tags:
+            if 'consumer_advice:value' in tags:
+                info_dict['mpaa'] = "%s: %s" % (tags['classification:value'], tags['consumer_advice:value'])
+            else:
+                info_dict['mpaa'] = tags['classification:value']
+        if 'actors:name' in tags:
+            info_dict['cast'] = [actor.strip() for actor in tags['actors:name'].split(',')]
+        if 'show:content_owner' in tags:
+            info_dict['studio'] = tags['show:content_owner']
+        if 'mediaSchedules' in media and len(media['mediaSchedules']['mediaSchedule'])>0:
+            if 'start' in media['mediaSchedules']['mediaSchedule']:
+                info_dict['aired'] = media['mediaSchedules']['mediaSchedule']['start']
+            else:
+                info_dict['aired'] = media['mediaSchedules']['mediaSchedule'][0]['start']
+        return info_dict
         
     def _parse_title( self, title ):
         split = title.split('|',1)
