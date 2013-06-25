@@ -1,10 +1,9 @@
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.catchuptv.au.ten" name="Channel Ten CatchUp TV" version="0.2.0" provider-name="adammw111">
+<?xml version="1.0" ?><addon id="plugin.video.catchuptv.au.ten" name="Channel Ten CatchUp TV" provider-name="adammw111" version="0.3.0">
     <requires>
         <import addon="xbmc.python" version="1.0"/>
         <import addon="script.module.simplejson"/>
     </requires>
-    <extension point="xbmc.python.pluginsource" library="default.py">
+    <extension library="default.py" point="xbmc.python.pluginsource">
         <provides>video</provides>
     </extension>
     <extension point="xbmc.addon.metadata">
@@ -12,6 +11,6 @@
         <minversion>31542</minversion>
         <summary>Channel Ten CatchUp TV Video Player</summary>
         <description>Watch latest episodes, sneak peeks, exclusive internet extras and other videos from Network Ten Online.</description>
-        <disclaimer>You must be within Australia to use watch these videos.[CR]"Network Ten", Ten Logos and other works are copyright of their respective owners.</disclaimer>
+        <disclaimer>You must be within Australia to use watch these videos.[CR]&quot;Network Ten&quot;, Ten Logos and other works are copyright of their respective owners.</disclaimer>
     </extension>
 </addon>
