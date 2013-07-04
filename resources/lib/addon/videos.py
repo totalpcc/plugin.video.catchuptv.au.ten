@@ -91,7 +91,7 @@ class Main:
     def _get_xbmc_list_item_info(self, video):
         info_dict = {
             'title': htmlparser.unescape(video.name), 
-            'dateadded': video.publishedDate.strftime('%Y-%m-%d %h:%m:%s')
+            'dateadded': video.publishedDate.strftime('%Y-%m-%d %H:%M:%S')
         }
 
         if video.shortDescription:
