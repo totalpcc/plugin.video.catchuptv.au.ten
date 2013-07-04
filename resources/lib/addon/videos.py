@@ -163,7 +163,7 @@ class Main:
                 utils.log('Extracted date aired from title: %s (%s)' % (video.name, aired))
 
         # Extract TV Show name, Season/Episode from title
-        m = re.match('(.+?)\s*-\s*S(\d+?)\s*Ep\.?\s*(\d+?)', video.name)
+        m = re.match('(.+?)\s*-\s*S(\d+?)\s*Ep\.?\s*(\d+)', video.name)
         if m:
             regex_dict = {'tvshowtitle': m.group(1), 'season': m.group(2), 'episode': m.group(3)}
             info_dict.update(regex_dict)
