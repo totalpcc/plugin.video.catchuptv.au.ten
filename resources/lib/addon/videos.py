@@ -94,6 +94,12 @@ class Main:
             'dateadded': video.publishedDate.strftime('%Y-%m-%d %H:%M:%S')
         }
 
+        if 'start_date_au' in video.customFields:
+            try:
+                info_dict['aired'] = strptime(video.customFields['start_date_au'], '%Y-%m-%d %I:%M %p').strftime('%Y-%m-%d')
+            except:
+                pass
+
         if video.shortDescription:
             # Extract airdate from description, e.g. National News
             m = re.match(re.compile('(?:Mon|Tues?|Wed|Thu|Fri)?\s*(\d+?)/(\d+?)/(\d+?):\s*(.+)\s*', re.IGNORECASE), video.shortDescription)
@@ -175,8 +181,17 @@ class Main:
         if 'tv_season' in video.customFields:
             info_dict['season'] = video.customFields['tv_season']
 
+        if 'cast' in video.customFields:
+            info_dict['cast'] = video.customFields['cast']
+        if 'program_classification' in video.customFields:
+            if 'consumer_advice' in video.customFields:
+                info_dict['mpaa'] = '%s: %s' % (video.customFields['program_classification'], video.customFields['consumer_advice'])
+            else:
+                info_dict['mpaa'] = video.customFields['program_classification']
         if 'tv_channel' in video.customFields:
             info_dict['studio'] = video.customFields['tv_channel']
+        if 'production_company_distributor' in video.customFields:
+            info_dict['studio'] = video.customFields['production_company_distributor']
         if 'video_type_short_form' in video.customFields:
             if video.customFields['video_type_short_form'] == 'News clip':
                 info_dict['genre'] = 'News'
