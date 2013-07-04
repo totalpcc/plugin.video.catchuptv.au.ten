@@ -41,7 +41,14 @@ except:
 sys.path.append(os.path.join(current_dir, 'resources', 'lib'))
 
 import importlib
+import config
 import utils
+
+try:
+  import StorageServer
+  cache = StorageServer.StorageServer(config.id, 24)
+except:
+  pass
 
 # Dynamically load module
 def loadModule(moduleName, params):
@@ -56,12 +63,11 @@ def errorDialog(err=""):
     message = utils.dialog_error(err)
     d.ok(*message)
 
-
 if ( __name__ == "__main__" ):
   utils.log('Initialised addon with arguments: %s' % repr(sys.argv))
 
   if ( len(sys.argv) != 3 or not sys.argv[ 2 ] ):
-    loadModule('playlist', {})
+    loadModule(config.DEFAULT_MODULE, {})
   else:
     qs = sys.argv[ 2 ]
     if ( qs.startswith('?') ):
@@ -75,5 +81,5 @@ if ( __name__ == "__main__" ):
         errorDialog()
         utils.log_error()
     else:
-      utils.log('Warning: Un-handled query string, loading playlist')
-      loadModule('playlist', params)
+      utils.log('Warning: Un-handled query string, loading %s' % config.DEFAULT_MODULE)
+      loadModule(config.DEFAULT_MODULE, params)

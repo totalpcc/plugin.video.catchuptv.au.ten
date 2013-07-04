@@ -69,10 +69,3 @@ def handle_logger(logger):
             raise
         except:
             self.handleError(record)
-
-  ch = LoggingHandler()
-  format = "[%s v%s] %s" % (config.NAME, config.VERSION, '[%(module)s:%(funcName)s():%(lineno)d] %(levelname)s: %(message)s')
-  formatter = logging.Formatter(format)
-  ch.setFormatter(formatter)
-  logger.addHandler(ch)
-  logger.setLevel(logging.DEBUG)

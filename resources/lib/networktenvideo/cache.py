@@ -1,5 +1,5 @@
 #
-#   Network Ten CatchUp TV Video Addon
+#   Network Ten CatchUp TV Video API Library
 #
 #   Copyright (c) 2013 Adam Malcontenti-Wilson
 # 
@@ -22,11 +22,27 @@
 #   THE SOFTWARE.
 #
 
-import os
-import version
+class Cache:
+    def __init__(self, table, timeout=24):
+        return None
 
-ID = 'plugin.video.catchuptv.au.ten'
-NAME = 'Network Ten CatchUp TV'
-VERSION = version.VERSION
-BUGREPORT_URL = 'https://github.com/xbmc-catchuptv-au/plugin.video.catchuptv.au.ten/issues'
-DEFAULT_MODULE = 'rootlist'
+    def cacheFunction(self, funct=False, *args):
+        return funct(*args)
+
+    def set(self, name, data):
+        return ""
+
+    def get(self, name):
+        return ""
+
+    def setMulti(self, name, data):
+        return ""
+
+    def getMulti(self, name, items):
+        return ""
+
+    def lock(self, name):
+        return False
+
+    def unlock(self, name):
+        return False

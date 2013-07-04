@@ -22,11 +22,31 @@
 #   THE SOFTWARE.
 #
 
-import os
-import version
+import sys
+import pickle
+import urllib
+import utils
+import xbmcgui
+import xbmcplugin
 
-ID = 'plugin.video.catchuptv.au.ten'
-NAME = 'Network Ten CatchUp TV'
-VERSION = version.VERSION
-BUGREPORT_URL = 'https://github.com/xbmc-catchuptv-au/plugin.video.catchuptv.au.ten/issues'
-DEFAULT_MODULE = 'rootlist'
+from networktenvideo.api import NetworkTenVideo
+
+
+class Main:
+    def __init__( self, params ): 
+        self.client = NetworkTenVideo()
+        shows = self.client.get_shows()
+        urlArgs = {'action': 'playlist'}
+        shows_sorted = sorted(shows.items, key=lambda k: k.showName.lower()) 
+        for show in shows_sorted:
+            urlArgs['show'] = pickle.dumps(show)
+            utils.log('Found data for show: %s' % show)
+            listitem = xbmcgui.ListItem( show.showName ) 
+            if show.fanart:
+                listitem.setProperty('fanart_image', show.fanart)
+            if show.logo:
+                listitem.setIconImage(show.logo)
+            xbmcplugin.addDirectoryItem( handle=int( sys.argv[ 1 ] ), listitem=listitem, url="%s?%s" % ( sys.argv[0], urllib.urlencode(urlArgs)), totalItems=len(shows.items), isFolder=True)
+
+        xbmcplugin.setContent( handle=int( sys.argv[ 1 ] ), content='tvshows' )
+        xbmcplugin.endOfDirectory( handle=int( sys.argv[ 1 ] ), succeeded=1 )

@@ -24,6 +24,7 @@
 
 import sys
 import pickle
+import urlparse
 import urllib
 import xbmcgui
 import xbmcplugin
@@ -35,15 +36,37 @@ from networktenvideo.objects import Show
 class Main:
     def __init__( self, params ): 
         self.client = NetworkTenVideo()
-        show = pickle.loads(params['show'][0])
-        utils.log('Finding playlists for show: %s' % show)
-        playlists = self.client.get_playlists_for_show(show)
-        urlArgs = {'action': 'videos', 'show': params['show'][0]}
-        for playlist in playlists.items:
-            urlArgs['query'] = playlist.query
-            listitem = xbmcgui.ListItem( playlist.name )
-            if show.fanart:
-                listitem.setProperty('fanart_image', show.fanart)
-            xbmcplugin.addDirectoryItem( handle=int( sys.argv[ 1 ] ), listitem=listitem, url="%s?%s" % ( sys.argv[0], urllib.urlencode(urlArgs)), totalItems=len(playlists.items), isFolder=True)
 
+        if 'show' in params:
+            show = pickle.loads(params['show'][0])
+        else:
+            show = None
+
+        query = urlparse.parse_qs(params['query'][0])
+        videos = self.client.search_videos(**query)
+        urlArgs = {'action': 'play'}
+        for video in videos.items:
+            urlArgs['videoId'] = video.id
+            utils.log('Adding video %s' % video)
+            listitem = xbmcgui.ListItem( video.name, thumbnailImage=video.videoStillURL )
+            listitem.setInfo( "video", self._get_xbmc_list_item_info(video))
+            listitem.addStreamInfo('video', {'duration': video.length / 1000})
+            listitem.setProperty('IsPlayable', 'true')
+            if show and show.fanart:
+                listitem.setProperty('fanart_image', show.fanart)
+            xbmcplugin.addDirectoryItem( handle=int( sys.argv[ 1 ] ), listitem=listitem, url="%s?%s" % ( sys.argv[0], urllib.urlencode(urlArgs)), totalItems=len(videos.items))
+
+        xbmcplugin.setContent( handle=int( sys.argv[ 1 ] ), content='episodes' )
         xbmcplugin.endOfDirectory( handle=int( sys.argv[ 1 ] ), succeeded=1 )
+
+    def _get_xbmc_list_item_info(self, video):
+        info_dict = {
+            'title': video.name, 
+            'description': video.shortDescription,
+            'dateadded': video.publishedDate.strftime('%Y-%m-%d %h:%m:%s')
+        }
+
+        if 'tv_show' in video.customFields:
+            info_dict['tvshowtitle'] = video.customFields['tv_show']
+        if 'tv_season' in video.customFields:
+            info_dict['season'] = video.customFields['tv_season']

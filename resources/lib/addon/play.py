@@ -23,27 +23,28 @@
 #
 
 import sys
-import pickle
 import urllib
+import xbmc
 import xbmcgui
 import xbmcplugin
 import utils
 from networktenvideo.api import NetworkTenVideo
-from brightcove.core import get_item
-from networktenvideo.objects import Show
 
 class Main:
     def __init__( self, params ): 
         self.client = NetworkTenVideo()
-        show = pickle.loads(params['show'][0])
-        utils.log('Finding playlists for show: %s' % show)
-        playlists = self.client.get_playlists_for_show(show)
-        urlArgs = {'action': 'videos', 'show': params['show'][0]}
-        for playlist in playlists.items:
-            urlArgs['query'] = playlist.query
-            listitem = xbmcgui.ListItem( playlist.name )
-            if show.fanart:
-                listitem.setProperty('fanart_image', show.fanart)
-            xbmcplugin.addDirectoryItem( handle=int( sys.argv[ 1 ] ), listitem=listitem, url="%s?%s" % ( sys.argv[0], urllib.urlencode(urlArgs)), totalItems=len(playlists.items), isFolder=True)
+        media = self.client.get_media_for_video(params['videoId'][0])
+        utils.log('Found media renditions for video: %s' % repr(media.items))
 
-        xbmcplugin.endOfDirectory( handle=int( sys.argv[ 1 ] ), succeeded=1 )
+        # Blindly go for the highest bitrate for now. Later versions could include a customisable setting of which stream to use
+        media_sorted = sorted(media.items, key=lambda m: m.encodingRate, reverse=True)
+        media = media_sorted[0]
+        path = media.defaultURL
+        if path.startswith('rtmp'):
+            path = path.replace('&mp4:', ' playpath=mp4:')
+        utils.log('Using rendition: %s with url: %s' % (media, path))
+
+        listitem = xbmcgui.ListItem(path=path)
+        listitem.addStreamInfo('video', {'codec': media.videoCodec, 'width': media.frameWidth, 'height': media.frameHeight})
+        # make sure that the original ListItem is set to IsPlayable otherwise you will get handle errors here
+        xbmcplugin.setResolvedUrl(handle=int(sys.argv[1]), succeeded=True, listitem=listitem)
