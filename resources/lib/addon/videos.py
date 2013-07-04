@@ -55,6 +55,7 @@ class Main:
         else:
             show = None
 
+        #TODO: proper pagination
         query = urlparse.parse_qs(params['query'][0])
         videos = self.client.search_videos(**query)
         urlArgs = {'action': 'play'}
