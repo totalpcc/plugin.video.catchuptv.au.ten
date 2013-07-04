@@ -23,6 +23,7 @@
 #
 
 import sys
+import re
 import pickle
 import urlparse
 import urllib
@@ -50,23 +51,51 @@ class Main:
             utils.log('Adding video %s' % video)
             listitem = xbmcgui.ListItem( video.name, thumbnailImage=video.videoStillURL )
             listitem.setInfo( "video", self._get_xbmc_list_item_info(video))
-            listitem.addStreamInfo('video', {'duration': video.length / 1000})
+            if hasattr(listitem, 'addStreamInfo'):
+                # we don't actually know the stream parameters yet, but we can guess
+                listitem.addStreamInfo('video', {
+                    'codec': 'h264',
+                    'width': 944,
+                    'height': 528,
+                    'duration': float(video.length / 1000)
+                })
+                listitem.addStreamInfo('audio', {
+                    'codec': 'aac',
+                    'language': 'en',
+                    'channels': 2
+                })
             listitem.setProperty('IsPlayable', 'true')
             if show and show.fanart:
                 listitem.setProperty('fanart_image', show.fanart)
-            xbmcplugin.addDirectoryItem( handle=int( sys.argv[ 1 ] ), listitem=listitem, url="%s?%s" % ( sys.argv[0], urllib.urlencode(urlArgs)), totalItems=len(videos.items))
+            xbmcplugin.addDirectoryItem( handle=int( sys.argv[ 1 ] ), listitem=listitem, url="%s?%s" % ( sys.argv[0], urllib.urlencode(urlArgs)), totalItems=len(videos.items), isFolder=False)
 
-        xbmcplugin.setContent( handle=int( sys.argv[ 1 ] ), content='episodes' )
         xbmcplugin.endOfDirectory( handle=int( sys.argv[ 1 ] ), succeeded=1 )
+        xbmcplugin.setContent( handle=int( sys.argv[ 1 ] ), content='episodes' )
 
     def _get_xbmc_list_item_info(self, video):
         info_dict = {
             'title': video.name, 
-            'description': video.shortDescription,
             'dateadded': video.publishedDate.strftime('%Y-%m-%d %h:%m:%s')
         }
+
+        if video.shortDescription:
+            info_dict['plot'] = video.shortDescription
+            info_dict['plotoutline'] = video.shortDescription
+
+        if video.longDescription:
+            info_dict['plot'] = video.longDescription
+
+        m = re.match('(.+?)\s*-\s*S(\d+?)\s*Ep\.?\s*(\d+?)', video.name)
+        if m:
+            regex_dict = {'tvshowtitle': m.group(1), 'season': m.group(2), 'episode': m.group(3)}
+            info_dict.update(regex_dict)
+            utils.log('Found video info from regex: %s' % repr(regex_dict))
 
         if 'tv_show' in video.customFields:
             info_dict['tvshowtitle'] = video.customFields['tv_show']
         if 'tv_season' in video.customFields:
             info_dict['season'] = video.customFields['tv_season']
+        if 'tv_channel' in video.customFields:
+            info_dict['studio'] = video.customFields['tv_channel']
+
+        return info_dict
