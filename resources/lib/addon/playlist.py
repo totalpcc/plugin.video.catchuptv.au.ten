@@ -46,4 +46,6 @@ class Main:
                 listitem.setProperty('fanart_image', show.fanart)
             xbmcplugin.addDirectoryItem( handle=int( sys.argv[ 1 ] ), listitem=listitem, url="%s?%s" % ( sys.argv[0], urllib.urlencode(urlArgs)), totalItems=len(playlists.items), isFolder=True)
 
+        xbmcplugin.addSortMethod( handle=int( sys.argv[ 1 ] ), sortMethod=xbmcplugin.SORT_METHOD_UNSORTED ) 
+        xbmcplugin.addSortMethod( handle=int( sys.argv[ 1 ] ), sortMethod=xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE ) 
         xbmcplugin.endOfDirectory( handle=int( sys.argv[ 1 ] ), succeeded=1 )
