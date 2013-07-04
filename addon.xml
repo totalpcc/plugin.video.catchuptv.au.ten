@@ -1,4 +1,4 @@
-<?xml version="1.0" ?><addon id="plugin.video.catchuptv.au.ten" name="Network Ten CatchUp TV" provider-name="adammw111" version="0.3.0-3-g4b77949">
+<?xml version="1.0" ?><addon id="plugin.video.catchuptv.au.ten" name="Network Ten CatchUp TV" provider-name="adammw111" version="0.4.0-brightcove">
     <requires>
         <import addon="xbmc.python" version="1.0"/>
         <import addon="script.module.simplejson"/>
