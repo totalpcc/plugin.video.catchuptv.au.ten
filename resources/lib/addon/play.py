@@ -28,7 +28,7 @@ import xbmc
 import xbmcgui
 import xbmcplugin
 import utils
-from networktenvideo.api import NetworkTenVideo
+from networktenvideo.api import NetworkTenVideo, SWF_URL, PAGE_URL
 
 class Main:
     def __init__( self, params ): 
@@ -42,6 +42,7 @@ class Main:
         path = media.defaultURL
         if path.startswith('rtmp'):
             path = path.replace('&mp4:', ' playpath=mp4:')
+            path += ' swfVfy=true swfUrl=%s pageUrl=%s' % (SWF_URL, PAGE_URL)
         utils.log('Using rendition: %s with url: %s' % (media, path))
 
         listitem = xbmcgui.ListItem(path=path)
