@@ -181,6 +181,12 @@ class Main:
             info_dict['tvshowtitle'] = video.customFields['tv_show']
         if 'tv_season' in video.customFields:
             info_dict['season'] = video.customFields['tv_season']
+        if 'tv_episode' in video.customFields:
+            m = re.match('^.+/(\d+)$', video.customFields['tv_episode'])
+            if m:
+                episode = int(m.group(1))
+                if episode != 0:
+                    info_dict['episode'] = episode
 
         if 'cast' in video.customFields:
             info_dict['cast'] = video.customFields['cast']
