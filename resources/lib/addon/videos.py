@@ -32,10 +32,12 @@ import urllib
 import xbmcgui
 import xbmcplugin
 import utils
+from HTMLParser import HTMLParser
 from networktenvideo.api import NetworkTenVideo
 from brightcove.core import get_item
 from networktenvideo.objects import Show
 
+htmlparser = HTMLParser()
 
 # Work around strptime bug, ref: http://forum.xbmc.org/showthread.php?tid=112916
 def strptime(date_string, format):
@@ -59,7 +61,7 @@ class Main:
         for video in videos.items:
             urlArgs['videoId'] = video.id
             utils.log('Adding video %s' % video)
-            listitem = xbmcgui.ListItem( video.name, thumbnailImage=video.videoStillURL )
+            listitem = xbmcgui.ListItem( htmlparser.unescape(video.name), thumbnailImage=video.videoStillURL )
             listitem.setInfo( "video", self._get_xbmc_list_item_info(video))
             if hasattr(listitem, 'addStreamInfo'):
                 # we don't actually know the stream parameters yet, but we can guess
@@ -88,7 +90,7 @@ class Main:
 
     def _get_xbmc_list_item_info(self, video):
         info_dict = {
-            'title': video.name, 
+            'title': htmlparser.unescape(video.name), 
             'dateadded': video.publishedDate.strftime('%Y-%m-%d %h:%m:%s')
         }
 
@@ -111,6 +113,12 @@ class Main:
 
         if video.longDescription:
             info_dict['plot'] = video.longDescription
+
+        if '&' in info_dict['plot']:
+            info_dict['plot'] = htmlparser.unescape(info_dict['plot'])
+
+        if '&' in info_dict['plotoutline']:
+            info_dict['plotoutline'] = htmlparser.unescape(info_dict['plotoutline'])
 
         # Extract airdate from title, e.g. The Project
         m = re.match(re.compile('(.+?),?\s*-?\s* (?:(?:Mon|Tues?|Wed(?:nes)?|Thu(?:rs)?|Fri|Sat(?:ur)?|Sun)(?:day)?)?\s*(\d+?)?(?:st|nd|rd|th)?\s*(?:of)?\s*(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|June?|July?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember))\s*(\d+?)?(?:st|nd|rd|th)?(?:\s+(\d+))?', re.IGNORECASE), video.name)
