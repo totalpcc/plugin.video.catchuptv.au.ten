@@ -62,7 +62,7 @@ DEFAULT_SEARCH_ARGS = {
   'video_fields': 'id,name,publishedDate,shortDescription,length,videoStillURL,creationDate,lastModifiedDate',
   'custom_fields': 'start_date_au,end_date_au,start_date_nsw,end_date_nsw,start_date_act,end_date_act,start_date_vic,end_date_vic,start_date_tas,end_date_tas,start_date_sa,end_date_sa,start_date_wa,end_date_wa,start_date_nt,end_date_nt,start_date_qld,end_date_qld,start_date_au,end_date_au,prevent_sony,prevent_web,prevent_mobile_web,prevent_ios,prevent_android,prevent_xbox,prevent_windows_app,tv_channel,tv_show,tv_season,tv_episode,cast,video_type_long_form,video_type_short_form,program_classification,consumer_advice,expiry_date,expiry_tag,series_crid_id,episode_crid_id,production_company_distributor',
   'none': 'prevent_web:true',
-  'get_item_count': True,
+  'get_item_count': 'true',
   'page_size': 100,
   'page_number': 0
 }
