@@ -24,6 +24,8 @@
 
 import sys
 import re
+import datetime
+import time
 import pickle
 import urlparse
 import urllib
@@ -33,6 +35,14 @@ import utils
 from networktenvideo.api import NetworkTenVideo
 from brightcove.core import get_item
 from networktenvideo.objects import Show
+
+
+# Work around strptime bug, ref: http://forum.xbmc.org/showthread.php?tid=112916
+def strptime(date_string, format):
+    try:
+        return datetime.datetime.strptime(date_string, format)
+    except TypeError:
+        return datetime.datetime(*(time.strptime(date_string, format)[0:6]))
 
 class Main:
     def __init__( self, params ): 
@@ -83,23 +93,84 @@ class Main:
         }
 
         if video.shortDescription:
-            info_dict['plot'] = video.shortDescription
-            info_dict['plotoutline'] = video.shortDescription
+            # Extract airdate from description, e.g. National News
+            m = re.match(re.compile('(?:Mon|Tues?|Wed|Thu|Fri)?\s*(\d+?)/(\d+?)/(\d+?):\s*(.+)\s*', re.IGNORECASE), video.shortDescription)
+            if m:
+                if len(m.group(3)) == 2:
+                    year = 2000 + int(m.group(3))
+                else:
+                    year = int(m.group(3))
+                aired = datetime.date(year, int(m.group(2)), int(m.group(1))).strftime('%Y-%m-%d')
+                info_dict['aired'] = aired
+                utils.log('Extracted date aired from description: %s' % aired)
+                info_dict['plot'] = m.group(4)
+                info_dict['plotoutline'] = m.group(4)
+            else:
+                info_dict['plot'] = video.shortDescription
+                info_dict['plotoutline'] = video.shortDescription
 
         if video.longDescription:
             info_dict['plot'] = video.longDescription
 
+        # Extract airdate from title, e.g. The Project
+        m = re.match(re.compile('(.+?),?\s*-?\s* (?:(?:Mon|Tues?|Wed(?:nes)?|Thu(?:rs)?|Fri|Sat(?:ur)?|Sun)(?:day)?)?\s*(\d+?)?(?:st|nd|rd|th)?\s*(?:of)?\s*(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|June?|July?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember))\s*(\d+?)?(?:st|nd|rd|th)?(?:\s+(\d+))?', re.IGNORECASE), video.name)
+        if m:
+            utils.log('airdate matches: title=%s, showname=%s, day=%s, month=%s, day2=%s, year=%s' % (video.name, m.group(1), m.group(2), m.group(3), m.group(4), m.group(5)))
+
+            day = None
+            month = None
+            year = None
+            if m.group(2) and int(m.group(2)) != 0:
+                day = int(m.group(2))
+            elif m.group(4) and int(m.group(4)) != 0:
+                day = int(m.group(4))
+
+            monthName = m.group(3)
+            if monthName and len(monthName) != 0:
+                date = None
+                try:
+                    date = strptime(monthName,'%b')
+                except ValueError:
+                    pass
+                if date is None:
+                    try:
+                        date = strptime(monthName,'%B')
+                    except ValueError:
+                        pass
+                if date:
+                    month = date.month
+
+            if m.group(5) and int(m.group(5)) != 0:
+                if len(m.group(5)) == 2:
+                    year = 2000 + int(m.group(5))
+                else:
+                    year = int(m.group(5))
+
+            if day is not None and month is not None:
+                if year is None:
+                    utils.log('Year not specified, assuming current year')
+                    year = datetime.datetime.now().year
+                aired = datetime.date(year, month, day).strftime('%Y-%m-%d')
+                info_dict['aired'] = aired
+                utils.log('Extracted date aired from title: %s (%s)' % (video.name, aired))
+
+        # Extract TV Show name, Season/Episode from title
         m = re.match('(.+?)\s*-\s*S(\d+?)\s*Ep\.?\s*(\d+?)', video.name)
         if m:
             regex_dict = {'tvshowtitle': m.group(1), 'season': m.group(2), 'episode': m.group(3)}
             info_dict.update(regex_dict)
             utils.log('Found video info from regex: %s' % repr(regex_dict))
 
+        # Extract TV Show name, Season/Episode from custom fields
         if 'tv_show' in video.customFields:
             info_dict['tvshowtitle'] = video.customFields['tv_show']
         if 'tv_season' in video.customFields:
             info_dict['season'] = video.customFields['tv_season']
+
         if 'tv_channel' in video.customFields:
             info_dict['studio'] = video.customFields['tv_channel']
+        if 'video_type_short_form' in video.customFields:
+            if video.customFields['video_type_short_form'] == 'News clip':
+                info_dict['genre'] = 'News'
 
         return info_dict
