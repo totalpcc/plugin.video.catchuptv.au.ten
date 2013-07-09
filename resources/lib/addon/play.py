@@ -46,6 +46,7 @@ class Main:
         utils.log('Using rendition: %s with url: %s' % (media, path))
 
         listitem = xbmcgui.ListItem(path=path)
-        listitem.addStreamInfo('video', {'codec': media.videoCodec, 'width': media.frameWidth, 'height': media.frameHeight})
+        if hasattr(listitem, 'addStreamInfo'):
+            listitem.addStreamInfo('video', {'codec': media.videoCodec, 'width': media.frameWidth, 'height': media.frameHeight})
         # make sure that the original ListItem is set to IsPlayable otherwise you will get handle errors here
         xbmcplugin.setResolvedUrl(handle=int(sys.argv[1]), succeeded=True, listitem=listitem)
