@@ -28,30 +28,25 @@ from apicache import APICache
 
 class Module(xbmcswift2.Module):
   def __init__(self):
-    super(Module, self).__init__('plugin.video.catchuptv.au.ten.playlist')
-    
+    super(Module, self).__init__('plugin.video.catchuptv.au.ten.showlist')
+
     # decorators
-    self.playlist = self.route('/playlists/<show>')(self.playlist)
+    self.showlist = self.route('/')(self.showlist)
 
-  def playlist(self, show):
+  def showlist(self):
     api = APICache(self.plugin)
-    show_data = api.get_show(show)
 
-    if len(show_data.playlists) > 0:
-      playlists = show_data.playlists
-    else:
-      playlists = api.get_playlists(show)
-
-    playlistItems = []
-    for playlist in playlists:
+    shows = []
+    for show in api.get_shows():
       item = ListItem.from_dict(
-        label=playlist.name,
-        path=self.url_for('videolist.videolist', explicit=True, query=playlist.query, show=show)
+        label=show.showName,
+        path=self.url_for('playlist.playlist', explicit=True, show=show.showName)
       )
-      if show_data.fanart:
-        item.set_property('fanart_image', show_data.fanart)
-      if playlist.type == "season":
-        item.set_info('video', {season: playlist.season})
-      playlistItems.append(item)
+      if show.fanart:
+        item.set_property('fanart_image', show.fanart)
+      if show.logo:
+        item.set_thumbnail(show.logo)
+      shows.append(item)
 
-    self.plugin.finish(items=playlistItems, sort_methods=[SortMethod.UNSORTED, SortMethod.LABEL_IGNORE_THE])
+    self.set_content('tvshows')
+    self.plugin.finish(items=shows, sort_methods=[SortMethod.LABEL_IGNORE_THE])

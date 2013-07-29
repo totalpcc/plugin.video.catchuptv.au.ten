@@ -44,7 +44,7 @@ import urlparse
 import urllib
 from brightcove.api import Brightcove
 from brightcove.core import get_item
-from networktenvideo.objects import ShowItemCollection, PlaylistItemCollection, MediaRenditionItemCollection
+from networktenvideo.objects import Show, ShowItemCollection, PlaylistItemCollection, MediaRenditionItemCollection
 from networktenvideo.amf import BrightCoveAMFHelper
 from networktenvideo.cache import Cache
 
@@ -124,11 +124,18 @@ class NetworkTenVideo:
       json_data = json.loads(resp)
       return get_item({'items': json_data['shows']}, ShowItemCollection)
 
+    def get_show(self, show):
+      resp = cache.cacheFunction(self._request, SHOWDATA_URL)
+      json_data = json.loads(resp)
+      for showSearch in json_data['shows']:
+        if showSearch['showName'] == show:
+          return get_item(showSearch, Show)
+
     def get_playlists_for_show(self, show):
       resp = cache.cacheFunction(self._request, SHOWDATA_URL)
       json_data = json.loads(resp)
       for showSearch in json_data['shows']:
-        if showSearch['showName'] == show.showName:
+        if showSearch['showName'] == show:
           return get_item({'items': showSearch['playlists']}, PlaylistItemCollection)
       return None
 

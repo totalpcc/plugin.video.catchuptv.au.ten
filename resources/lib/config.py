@@ -22,11 +22,5 @@
 #   THE SOFTWARE.
 #
 
-import os
-import version
-
-ID = 'plugin.video.catchuptv.au.ten'
-NAME = 'Network Ten CatchUp TV'
-VERSION = version.VERSION
 BUGREPORT_URL = 'https://github.com/xbmc-catchuptv-au/plugin.video.catchuptv.au.ten/issues'
-DEFAULT_MODULE = 'rootlist'
+CACHE_TTL = 15 # in minutes

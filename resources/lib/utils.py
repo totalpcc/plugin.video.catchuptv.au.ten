@@ -27,45 +27,34 @@
 
 import sys
 import traceback
-import logging
-import config
+from xbmcswift2 import xbmcgui, xbmcplugin
 
-def log(s):
-  print "[%s v%s] %s" % (config.NAME, config.VERSION, s)
+class Utils:
+  def __init__(self, plugin):
+    self.plugin = plugin
+    self.log = plugin.log
+    self.name = plugin.name
+    self.id = plugin.addon.getAddonInfo('id')
+    self.version = plugin.addon.getAddonInfo('version')
 
-def log_error(message=None):
-  exc_type, exc_value, exc_traceback = sys.exc_info()
-  if message:
-    exc_value = message
-  print "[%s v%s] ERROR: %s (%d) - %s" % (config.NAME, config.VERSION, exc_traceback.tb_frame.f_code.co_name, exc_traceback.tb_lineno, exc_value)
-  print traceback.print_exc()
+  def log_init(self):
+    self.log.debug('Initialising %s addon, v%s' % (self.name, self.version))
 
-def dialog_error(msg=""):
-  # Generate a list of lines for use in XBMC dialog
-  content = []
-  exc_type, exc_value, exc_traceback = sys.exc_info()
-  if (msg):
-    msg = " - %s" % msg
-  content.append("%s v%s Error" % (config.NAME, config.VERSION))
-  content.append("%s (%d)%s" % (exc_traceback.tb_frame.f_code.co_name, exc_traceback.tb_lineno, msg))
-  content.append(str(exc_value))
-  content.append("If this error continues to occur, please report it.")
-  return content
+  def show_error_dialog(self, err=""):
+    self.log.error(traceback.format_exc())
+    d = xbmcgui.Dialog()
+    if d:
+      message = self.dialog_error_msg(err)
+      d.ok(*message)
 
-def handle_logger(logger):
-  class LoggingHandler(logging.Handler):
-    def __init__(self, strm=None):
-        logging.Handler.__init__(self)
-        self.stream = sys.stdout
-
-    def flush(self):
-        pass
-
-    def emit(self, record):
-        try:
-            msg = self.format(record)
-            self.stream.write("%s\n" % msg)
-        except (KeyboardInterrupt, SystemExit):
-            raise
-        except:
-            self.handleError(record)
+  def dialog_error_msg(self, msg=""):
+    # Generate a list of lines for use in XBMC dialog
+    content = []
+    exc_type, exc_value, exc_traceback = sys.exc_info()
+    if (msg):
+      msg = " - %s" % msg
+    content.append("%s v%s Error" % (self.name, self.version))
+    content.append(str(exc_value))
+    content.append("[%s (%d)%s]" % (exc_traceback.tb_frame.f_code.co_name, exc_traceback.tb_lineno, msg))
+    content.append("If this error continues to occur, please report it on GitHub.")
+    return content

@@ -22,64 +22,34 @@
 #   THE SOFTWARE.
 #
 
+# Add ./resources/lib to the python path
 import os
-import sys
-import urlparse
-
-try:
-  import xbmcgui
-  IS_XBMC = True
-except ImportError:
-  IS_XBMC = False # for PC debugging
-
-# Add our resources/lib to the python path
 try:
    current_dir = os.path.dirname(os.path.abspath(__file__))
 except:
    current_dir = os.getcwd()
-
 sys.path.append(os.path.join(current_dir, 'resources', 'lib'))
 
-import importlib
-import config
-import utils
+from xbmcswift2 import Plugin
+from utils import Utils
+from addon import Addon
 
-try:
-  import StorageServer
-  cache = StorageServer.StorageServer(config.id, 24)
-except:
-  pass
+plugin = Plugin()
+utils = Utils(plugin)
+addon = Addon(plugin)
 
-# Dynamically load module
-def loadModule(moduleName, params):
-  utils.log('Loading %s module' % moduleName)
-  module = importlib.import_module('.%s' % moduleName, 'addon')
-  module.Main(params)
+if __name__ == '__main__':
+  utils.log_init()
 
-# Display a XBMC error dialog
-def errorDialog(err=""):
-  if IS_XBMC:
-    d = xbmcgui.Dialog()
-    message = utils.dialog_error(err)
-    d.ok(*message)
+  try:
+    plugin.run()
+  except:
+    utils.show_error_dialog()
 
-if ( __name__ == "__main__" ):
-  utils.log('Initialised addon with arguments: %s' % repr(sys.argv))
-
-  if ( len(sys.argv) != 3 or not sys.argv[ 2 ] ):
-    loadModule(config.DEFAULT_MODULE, {})
-  else:
-    qs = sys.argv[ 2 ]
-    if ( qs.startswith('?') ):
-      qs = qs[1:]
-    params = urlparse.parse_qs(qs)
-    utils.log('Parsed Parameters: %s' % repr(params))
-    if ( 'action' in params and len(params['action']) == 1 and params['action'][0]):
-      try:
-        loadModule(params['action'][0], params)
-      except:
-        errorDialog()
-        utils.log_error()
-    else:
-      utils.log('Warning: Un-handled query string, loading %s' % config.DEFAULT_MODULE)
-      loadModule(config.DEFAULT_MODULE, params)
+    items = []
+    if False:
+      items.append({
+        'label': 'Report Issue...',
+        'path': 'plugin://'
+      })
+    plugin.finish(items)

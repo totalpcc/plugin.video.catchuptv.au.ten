@@ -30,23 +30,32 @@ import xbmcplugin
 import utils
 from networktenvideo.api import NetworkTenVideo, SWF_URL, PAGE_URL
 
-class Main:
-    def __init__( self, params ): 
-        self.client = NetworkTenVideo()
-        media = self.client.get_media_for_video(params['videoId'][0])
-        utils.log('Found media renditions for video: %s' % repr(media.items))
+import xbmcswift2
+from xbmcswift2 import ListItem
+from apicache import APICache
 
-        # Blindly go for the highest bitrate for now. Later versions could include a customisable setting of which stream to use
-        media_sorted = sorted(media.items, key=lambda m: m.encodingRate, reverse=True)
-        media = media_sorted[0]
-        path = media.defaultURL
-        if path.startswith('rtmp'):
-            path = path.replace('&mp4:', ' playpath=mp4:')
-            path += ' swfVfy=true swfUrl=%s pageUrl=%s' % (SWF_URL, PAGE_URL)
-        utils.log('Using rendition: %s with url: %s' % (media, path))
+class Module(xbmcswift2.Module):
+  def __init__(self):
+    super(Module, self).__init__('plugin.video.catchuptv.au.ten.play')
+    
+    # decorators
+    self.play = self.route('/play/<videoId>')(self.play)
 
-        listitem = xbmcgui.ListItem(path=path)
-        if hasattr(listitem, 'addStreamInfo'):
-            listitem.addStreamInfo('video', {'codec': media.videoCodec, 'width': media.frameWidth, 'height': media.frameHeight})
-        # make sure that the original ListItem is set to IsPlayable otherwise you will get handle errors here
-        xbmcplugin.setResolvedUrl(handle=int(sys.argv[1]), succeeded=True, listitem=listitem)
+  def play(self, videoId):
+    api = NetworkTenVideo()
+    media = api.get_media_for_video(videoId)
+    self.log.debug('Found media renditions for video: %s', repr(media.items))
+
+    # Blindly go for the highest bitrate for now. Later versions could include a customisable setting of which stream to use
+    media_sorted = sorted(media.items, key=lambda m: m.encodingRate, reverse=True)
+    media = media_sorted[0]
+    path = media.defaultURL
+    if path.startswith('rtmp'):
+      path = path.replace('&mp4:', ' playpath=mp4:')
+      path += ' swfVfy=true swfUrl=%s pageUrl=%s' % (SWF_URL, PAGE_URL)
+    self.log.info('Using rendition: %s with url: %s' % (media, path))
+    
+    # Set the resolved url, and include media stream info
+    item = ListItem.from_dict(path=path)
+    item.add_stream_info('video', {'codec': media.videoCodec, 'width': media.frameWidth, 'height': media.frameHeight})
+    self.plugin.set_resolved_url(path)
