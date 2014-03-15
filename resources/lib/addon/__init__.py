@@ -21,6 +21,7 @@
 #   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 #   THE SOFTWARE.
 #
+import menu
 import play
 import playlist
 import showlist
@@ -28,6 +29,7 @@ import videolist
 
 class Addon:
   def __init__(self, plugin):
+    plugin.register_module(menu.Module(), '')
     plugin.register_module(showlist.Module(), '')
     plugin.register_module(playlist.Module(), '')
     plugin.register_module(videolist.Module(), '')

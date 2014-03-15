@@ -183,7 +183,7 @@ class Module(xbmcswift2.Module):
           info_dict['episode'] = episode
 
     if 'cast' in video.customFields:
-      info_dict['cast'] = video.customFields['cast']
+      info_dict['cast'] = video.customFields['cast'].split(',')
     if 'program_classification' in video.customFields:
       if 'consumer_advice' in video.customFields:
         info_dict['mpaa'] = '%s: %s' % (video.customFields['program_classification'], video.customFields['consumer_advice'])

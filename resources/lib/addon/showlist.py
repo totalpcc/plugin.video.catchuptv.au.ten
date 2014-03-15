@@ -24,29 +24,88 @@
 
 import xbmcswift2
 from xbmcswift2 import ListItem, SortMethod
-from apicache import APICache
+#from apicache import APICache
+import config
+import time
+import urllib
+import urlparse
+from networktenvideo.api import NetworkTenVideo
 
 class Module(xbmcswift2.Module):
   def __init__(self):
     super(Module, self).__init__('plugin.video.catchuptv.au.ten.showlist')
 
     # decorators
-    self.showlist = self.route('/')(self.showlist)
+    self.showlist = self.route('/shows/<type>')(self.showlist)
 
-  def showlist(self):
-    api = APICache(self.plugin)
-
+  def showlist(self, type):
+    api = NetworkTenVideo(self.plugin.cached(TTL=config.CACHE_TTL))
     shows = []
-    for show in api.get_shows():
-      item = ListItem.from_dict(
-        label=show.showName,
-        path=self.url_for('playlist.playlist', explicit=True, show=show.showName)
-      )
-      if show.fanart:
-        item.set_property('fanart_image', show.fanart)
-      if show.logo:
-        item.set_thumbnail(show.logo)
-      shows.append(item)
+    if 'featured' == type:
+      homepage = api.get_homepage()
+    elif 'news' == type:
+      for news in api.get_news():
+        item = ListItem.from_dict(
+          label=news['Title'],
+          path=self.url_for('videolist.videolist', explicit=True, query=news['Query']),
+        )
+        shows.append(item)
+      pass
+    elif 'sport' == type:
+      for sport in api.get_sports():
+        item = ListItem.from_dict(
+          label=sport['Title'],
+          path=self.url_for('videolist.videolist', explicit=True, query=sport['Query']),
+        )
+        shows.append(item)
+      pass
+    else: #tvshows
+      for show in api.get_shows():
+        info_dict = {}
+        if show['IsLongFormAvailable'] is not True: #todo: make this a setting
+          continue
+        if 'Genres' in show and len(show['Genres']):
+          info_dict['genre'] = show['Genres'][0]['Name']
+        if 'Description' in show:
+          info_dict['plot'] = show['Description']
+        if 'CurrentSeasonFirstEpisodeAirDateTime' in show:
+          try:
+            date = time.strptime(show['CurrentSeasonFirstEpisodeAirDateTime'],'%d-%m-%Y %H:%M:%S %p')
+            info_dict['aired'] = time.strftime('%Y-%m-%d', date)
+            info_dict['premiered'] = time.strftime('%Y-%m-%d', date)
+            info_dict['year'] = time.strftime('%Y', date)
+          except Exception, e:
+            pass
+        if 'Channel' in show:
+          info_dict['studio'] = show['Channel']
+        if 'NumberOfVideosFromBCQuery' in show:
+          # not technically correct as this also returns the number of short form as well but close enough
+          info_dict['episode'] = show['NumberOfVideosFromBCQuery'] 
+
+        if 'BCQueryForVideoListing' in show:
+          query = urlparse.parse_qs(show['BCQueryForVideoListing'], True)
+          if 'all' not in query:
+            query['all'] = []
+          elif not isinstance(query['all'], list):
+            query['all'] = [ query['all'] ]
+          query['all'].append('video_type_long_form:Full Episode')
+
+        item = ListItem.from_dict(
+          label=show['Title'],
+          path=self.url_for('videolist.videolist', explicit=True, query=urllib.urlencode(query, True)), #ShowPageItemId=show['ShowPageItemId']
+          info=info_dict
+        )
+
+        fanart_url = api.get_fanart(show)
+        if fanart_url:
+          item.set_property('fanart_image', fanart_url)
+
+        if 'Thumbnail' in show:
+          url = show['Thumbnail']
+          if url.startswith('//'):
+            url = 'http:' + url
+          item.set_thumbnail(url)
+        shows.append(item)
 
     self.set_content('tvshows')
     self.plugin.finish(items=shows, sort_methods=[SortMethod.LABEL_IGNORE_THE])

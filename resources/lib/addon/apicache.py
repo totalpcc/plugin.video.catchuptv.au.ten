@@ -36,8 +36,10 @@ except ImportError:
 class APICache:
   def __init__(self, plugin=None):
     self.api = NetworkTenVideo()
-    self.cache = plugin.get_storage('showlist', TTL=config.CACHE_TTL)
     self.log = plugin.log
+    self.log.debug('Cache TTL set to %d minutes', config.CACHE_TTL)
+    self.cache = plugin.get_storage('showlist', TTL=config.CACHE_TTL)
+    print repr(self.cache)
 
   def get_show(self, show, bypassCache=False):
     if not bypassCache and 'showlist' in self.cache and show in self.cache['showlist']:

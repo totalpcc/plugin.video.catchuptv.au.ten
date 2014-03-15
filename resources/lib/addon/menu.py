@@ -1,7 +1,7 @@
 #
-#   Network Ten CatchUp TV Video API Library
+#   Network Ten CatchUp TV Video Addon
 #
-#   Copyright (c) 2013 Adam Malcontenti-Wilson
+#   Copyright (c) 2014 Adam Malcontenti-Wilson
 # 
 #   Permission is hereby granted, free of charge, to any person obtaining a copy
 #   of this software and associated documentation files (the "Software"), to deal
@@ -22,27 +22,21 @@
 #   THE SOFTWARE.
 #
 
-class Cache:
-    def __init__(self, table, timeout=24):
-        return None
+import xbmcswift2
+from xbmcswift2 import ListItem, SortMethod
 
-    def cacheFunction(self, funct=False, *args):
-        return funct(*args)
+class Module(xbmcswift2.Module):
+  def __init__(self):
+    super(Module, self).__init__('plugin.video.catchuptv.au.ten.menu')
 
-    def set(self, name, data):
-        return ""
+    # decorators
+    self.menu = self.route('/')(self.menu)
 
-    def get(self, name):
-        return ""
-
-    def setMulti(self, name, data):
-        return ""
-
-    def getMulti(self, name, items):
-        return ""
-
-    def lock(self, name):
-        return False
-
-    def unlock(self, name):
-        return False
+  def menu(self):
+    items = [
+        {'label': 'Featured', 'path': self.plugin.url_for('showlist.showlist', type='featured')},
+        {'label': 'TV Shows', 'path': self.plugin.url_for('showlist.showlist', type='tvshows')},
+        {'label': 'News', 'path': self.plugin.url_for('showlist.showlist', type='news')},
+        {'label': 'Sport', 'path': self.plugin.url_for('showlist.showlist', type='sport')}
+    ]
+    return items

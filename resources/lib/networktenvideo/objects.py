@@ -51,7 +51,7 @@ class Playlist(APIObject):
     return '<Playlist name=\'{0}\'>'.format(self.name)
 
 class Show(APIObject):
-  _fields = ['showName', 'channelName', 'videoLink', 'mobileLink', 'logo', 'fanart', 'playlists']
+  _fields = ['showName', 'channelName', 'videoLink', 'mobileLink', 'logo', 'fanart', 'playlists', 'tvdbSeriesId']
   channelName = EnumField(ChannelNameEnum)
   playlists = ListField(Playlist)
 

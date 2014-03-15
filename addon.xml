@@ -1,9 +1,12 @@
-<?xml version="1.0" ?><addon id="plugin.video.catchuptv.au.ten" name="Network Ten CatchUp TV" provider-name="adammw111" version="0.4.0-1-g8d6ff35-xbmcswift2">
+<?xml version="1.0" ?><addon id="plugin.video.catchuptv.au.ten" name="TENplay" provider-name="adammw111" version="0.4.0-2-g4d53a82-xbmcswift2">
     <requires>
         <import addon="xbmc.python" version="2.1.0"/>
         <import addon="script.module.simplejson"/>
         <import addon="script.module.beautifulsoup"/>
-        <!--<import addon="script.module.brightcove"/>-->
+        <!--
+        We use our own copy until https://github.com/jbeluch/python-brightcove/pull/2 is merged
+        <import addon="script.module.brightcove"/>
+        -->
         <import addon="script.module.xbmcswift2" version="2.4.0"/>
     </requires>
     <extension library="default.py" point="xbmc.python.pluginsource">
@@ -12,8 +15,8 @@
     <extension point="xbmc.addon.metadata">
         <platform>all</platform>
         <minversion>31542</minversion>
-        <summary>Network Ten CatchUp TV Video Player</summary>
-        <description>Watch latest episodes, sneak peeks, exclusive internet extras and other videos from Network Ten Online.</description>
-        <disclaimer>You must be within Australia to use watch these videos.[CR]&quot;Network Ten&quot;, Ten Logos and other works are copyright of their respective owners.</disclaimer>
+        <summary>TENplay</summary>
+        <description>Watch latest episodes, sneak peeks, exclusive internet extras and other videos from Network Ten.</description>
+        <disclaimer>You must be within Australia to use watch these videos.[CR]The TENplay, TEN, ONE and ELEVEN logo and trade marks are registered trademarks of Network Ten Pty Limited.</disclaimer>
     </extension>
 </addon>
