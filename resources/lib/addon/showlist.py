@@ -45,20 +45,29 @@ class Module(xbmcswift2.Module):
       homepage = api.get_homepage()
     elif 'news' == type:
       for news in api.get_news():
+        fanart_url = api.get_fanart(news)
+
         item = ListItem.from_dict(
           label=news['Title'],
-          path=self.url_for('videolist.videolist', explicit=True, query=news['Query']),
+          path=self.url_for('videolist.videolist', explicit=True, query=news['BCQueryForVideoListing'], page='0', fanart=fanart_url),
         )
+
+        if fanart_url:
+          item.set_property('fanart_image', fanart_url)
+
+        if 'Thumbnail' in news:
+          url = news['Thumbnail']
+          if url.startswith('//'):
+            url = 'http:' + url
+          item.set_thumbnail(url)
         shows.append(item)
-      pass
     elif 'sport' == type:
       for sport in api.get_sports():
         item = ListItem.from_dict(
           label=sport['Title'],
-          path=self.url_for('videolist.videolist', explicit=True, query=sport['Query']),
+          path=self.url_for('videolist.videolist', explicit=True, query=sport['BCQueryForVideoListing'], page='0'),
         )
         shows.append(item)
-      pass
     else: #tvshows
       for show in api.get_shows():
         info_dict = {}
@@ -90,13 +99,14 @@ class Module(xbmcswift2.Module):
             query['all'] = [ query['all'] ]
           query['all'].append('video_type_long_form:Full Episode')
 
+        fanart_url = api.get_fanart(show)
+
         item = ListItem.from_dict(
           label=show['Title'],
-          path=self.url_for('videolist.videolist', explicit=True, query=urllib.urlencode(query, True)), #ShowPageItemId=show['ShowPageItemId']
+          path=self.url_for('videolist.videolist', explicit=True, query=urllib.urlencode(query, True), fanart=fanart_url), #ShowPageItemId=show['ShowPageItemId']
           info=info_dict
         )
 
-        fanart_url = api.get_fanart(show)
         if fanart_url:
           item.set_property('fanart_image', fanart_url)
 

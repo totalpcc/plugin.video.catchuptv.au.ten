@@ -45,11 +45,13 @@ class Module(xbmcswift2.Module):
     super(Module, self).__init__('plugin.video.catchuptv.au.ten.videolist')
     
     # decorators
-    self.videolist = self.route('/videos/<query>')(self.videolist)
+    self.videolist = self.route('/videos/<query>/<page>')(self.videolist)
 
-  def videolist(self, query):
+  def videolist(self, query, page='0'):
     api = APICache(self.plugin)
+    querystring = query
     query = urlparse.parse_qs(query)
+    query['page_number'] = page
     videos = api.search_videos(**query)
 
     show = None
@@ -76,9 +78,22 @@ class Module(xbmcswift2.Module):
         'language': 'en',
         'channels': 2
       })
-      if show and show.fanart:
-        item.set_property('fanart_image', show.fanart)
+      #if show and show.fanart:
+      if 'fanart' in self.request.args:
+        item.set_property('fanart_image', self.request.args['fanart'][0])
       videoItems.append(item)
+
+    if videos.total_count > (videos.page_size * (int(page) + 1)):
+      videoItems.insert(0, {
+          'label': 'Next >>',
+          'path': self.url_for('videolist.videolist', query=querystring, page=str(int(page) + 1))
+      })
+
+    if int(page) > 0:
+      videoItems.insert(0, {
+          'label': '<< Previous',
+          'path': self.url_for('videolist.videolist', query=querystring, page=str(int(page) - 1))
+      })
 
     self.set_content('episodes')
     self.plugin.finish(items=videoItems, sort_methods=[SortMethod.UNSORTED, SortMethod.EPISODE, SortMethod.VIDEO_TITLE, SortMethod.VIDEO_RUNTIME])
