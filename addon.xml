@@ -1,4 +1,4 @@
-<?xml version="1.0" ?><addon id="plugin.video.catchuptv.au.ten" name="TENplay" provider-name="adammw111" version="0.4.0-4-gab1b823-xbmcswift2">
+<?xml version="1.0" ?><addon id="plugin.video.catchuptv.au.ten" name="TENplay" provider-name="adammw111" version="0.4.0-5-g6b55f6a-xbmcswift2">
     <requires>
         <import addon="xbmc.python" version="2.1.0"/>
         <import addon="script.module.simplejson"/>

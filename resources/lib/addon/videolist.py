@@ -104,7 +104,18 @@ class Module(xbmcswift2.Module):
       'dateadded': video.publishedDate.strftime('%Y-%m-%d %H:%M:%S')
     }
 
-    if 'start_date_au' in video.customFields:
+    if 'clip_title' in video.customFields:
+      info_dict['title'] = video.customFields['clip_title']
+
+    if 'episode_name' in video.customFields:
+      info_dict['title'] += ': ' + video.customFields['episode_name']
+
+    if 'broadcast_date_previous' in video.customFields:
+      try:
+        info_dict['aired'] = video.customFields['broadcast_date_previous']
+      except:
+        pass
+    elif 'start_date_au' in video.customFields:
       try:
         info_dict['aired'] = strptime(video.customFields['start_date_au'], '%Y-%m-%d %I:%M %p').strftime('%Y-%m-%d')
       except:
