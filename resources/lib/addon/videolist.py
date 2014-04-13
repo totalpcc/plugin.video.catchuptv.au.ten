@@ -45,7 +45,7 @@ class Module(xbmcswift2.Module):
     super(Module, self).__init__('plugin.video.catchuptv.au.ten.videolist')
     
     # decorators
-    self.videolist = self.route('/videos/<query>/<page>')(self.videolist)
+    self.videolist = self.route('/videos/<query>/<page>', options={'page': '0'})(self.videolist)
 
   def videolist(self, query, page='0'):
     api = APICache(self.plugin)
