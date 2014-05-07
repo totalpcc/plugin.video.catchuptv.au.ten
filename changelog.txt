@@ -1,4 +1,5 @@
 [B]Version xbmcswift2[/B]
+- Handle more custom fields
 - Add default page parameter handling
 - add paging, news art, sorting
 - bump version and update

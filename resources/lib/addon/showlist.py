@@ -91,13 +91,15 @@ class Module(xbmcswift2.Module):
           # not technically correct as this also returns the number of short form as well but close enough
           info_dict['episode'] = show['NumberOfVideosFromBCQuery'] 
 
-        if 'BCQueryForVideoListing' in show:
+        if 'BCQueryForVideoListing' in show and len(show['BCQueryForVideoListing']):
           query = urlparse.parse_qs(show['BCQueryForVideoListing'], True)
           if 'all' not in query:
             query['all'] = []
           elif not isinstance(query['all'], list):
             query['all'] = [ query['all'] ]
           query['all'].append('video_type_long_form:Full Episode')
+        else:
+          continue
 
         fanart_url = api.get_fanart(show)
 
