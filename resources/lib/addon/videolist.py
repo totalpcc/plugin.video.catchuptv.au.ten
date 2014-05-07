@@ -27,9 +27,10 @@ import datetime
 import time
 import urlparse
 import xbmcswift2
+import config
 from HTMLParser import HTMLParser
 from xbmcswift2 import ListItem, SortMethod
-from apicache import APICache
+from networktenvideo.api import NetworkTenVideo
 
 htmlparser = HTMLParser()
 
@@ -48,15 +49,18 @@ class Module(xbmcswift2.Module):
     self.videolist = self.route('/videos/<query>/<page>', options={'page': '0'})(self.videolist)
 
   def videolist(self, query, page='0'):
-    api = APICache(self.plugin)
-    querystring = query
-    query = urlparse.parse_qs(query)
-    query['page_number'] = page
-    videos = api.search_videos(**query)
-
-    show = None
-    if 'show' in self.request.args:
-      show = api.get_show(self.request.args['show'][0])
+    api = NetworkTenVideo(self.plugin.cached(TTL=config.CACHE_TTL))
+    if query == 'featured':
+      homepage = api.get_homepage()
+      videoIds = []
+      for item in homepage:
+        videoIds.append(item['brightcoveid'])
+      videos = api.find_videos_by_ids(video_ids = videoIds)
+    else:
+      querystring = query
+      query = urlparse.parse_qs(query)
+      query['page_number'] = page
+      videos = api.search_videos(**query)
 
     videoItems = []
     for video in videos.items:
@@ -78,7 +82,6 @@ class Module(xbmcswift2.Module):
         'language': 'en',
         'channels': 2
       })
-      #if show and show.fanart:
       if 'fanart' in self.request.args:
         item.set_property('fanart_image', self.request.args['fanart'][0])
       videoItems.append(item)

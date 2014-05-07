@@ -24,7 +24,6 @@
 
 import xbmcswift2
 from xbmcswift2 import ListItem, SortMethod
-#from apicache import APICache
 import config
 import time
 import urllib
@@ -41,9 +40,7 @@ class Module(xbmcswift2.Module):
   def showlist(self, type):
     api = NetworkTenVideo(self.plugin.cached(TTL=config.CACHE_TTL))
     shows = []
-    if 'featured' == type:
-      homepage = api.get_homepage()
-    elif 'news' == type:
+    if 'news' == type:
       for news in api.get_news():
         fanart_url = api.get_fanart(news)
 

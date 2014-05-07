@@ -40,8 +40,10 @@ except ImportError:
 import os
 import sys
 import re
+import base64
 import urlparse
-import urllib
+import urllib2
+from datetime import datetime
 from brightcove.api import Brightcove
 from brightcove.core import get_item
 from networktenvideo.objects import Show, ShowItemCollection, PlaylistItemCollection, MediaRenditionItemCollection
@@ -57,9 +59,11 @@ OVERRIDES_URL = 'https://gist.github.com/adammw/8662672/raw/overrides.json'
 EPISODES_URL = 'http://tenplay.com.au/Handlers/GenericUserControlRenderer.ashx?path=~/UserControls/Browse/Episodes.ascx&props=ParentID,{%s}'
 SHOWDATA_URL = 'https://gist.github.com/adammw/b1ce5f1a41b9f030b824/raw/show-data.json'
 MOBILEDATA_URL = 'http://tenplay.com.au/web%20api/mobilepreloaddata'
+DEFAULT_VIDEO_FIELDS = 'id,name,publishedDate,shortDescription,length,videoStillURL,creationDate,lastModifiedDate'
+DEFAULT_CUSTOM_FIELDS = 'id,name,publishedDate,shortDescription,length,videoStillURL,creationDate,lastModifiedDate'
 DEFAULT_SEARCH_ARGS = {
-  'video_fields': 'id,name,publishedDate,shortDescription,length,videoStillURL,creationDate,lastModifiedDate',
-  'custom_fields': 'start_date_au,end_date_au,start_date_nsw,end_date_nsw,start_date_act,end_date_act,start_date_vic,end_date_vic,start_date_tas,end_date_tas,start_date_sa,end_date_sa,start_date_wa,end_date_wa,start_date_nt,end_date_nt,start_date_qld,end_date_qld,start_date_au,end_date_au,prevent_sony,prevent_web,prevent_mobile_web,prevent_ios,prevent_android,prevent_xbox,prevent_windows_app,tv_channel,tv_show,tv_season,tv_episode,cast,video_type_long_form,video_type_short_form,program_classification,consumer_advice,expiry_date,expiry_tag,series_crid_id,episode_crid_id,production_company_distributor,episode_name,content_security,web_content_url,clip_title,broadcast_date_previous,program_language',
+  'video_fields': DEFAULT_VIDEO_FIELDS,
+  'custom_fields': DEFAULT_CUSTOM_FIELDS,
   'none': 'prevent_web:true',
   'get_item_count': 'true',
   'exact': 'true',
@@ -86,9 +90,15 @@ class NetworkTenVideo:
       print "Could not load overrides from %s" % OVERRIDES_URL
       self.overrides = {}
 
+  def _authToken(self):
+    now = datetime.utcnow()
+    timestamp = "%04d%02d%02d%02d%02d%02d" % (now.year, now.month, now.day, now.hour, now.minute, now.second)
+    return base64.b64encode(timestamp)
+
   def _request(self, url, data=None):
     '''Returns a response for the given url and data.'''
-    conn = urllib.urlopen(url, data)
+    request = urllib2.Request(url, headers={"X-Network-Ten-Auth": self._authToken(), 'Accept-Encoding': ''})
+    conn = urllib2.urlopen(request, data)
     if conn.getcode() is not 200:
       raise Exception('Request Failure: ' + url)
     resp = conn.read()
@@ -155,9 +165,9 @@ class NetworkTenVideo:
 
     return None
 
-  def get_homepage(self):
-    pass
-    # TODO 
+  def get_homepage(self, state='vic'):
+    resp = self._request('https://v.tenplay.com.au/api/Homepage/index?state=%s' % state)
+    return json.loads(resp)
 
   def get_config(self):
     resp = self._request(MOBILEDATA_URL)
@@ -230,6 +240,15 @@ class NetworkTenVideo:
     params.update(kwargs)
 
     return self.brightcove.search_videos(**params)
+
+  def find_videos_by_ids(self, **kwargs):
+    params = dict({
+      'video_fields': DEFAULT_VIDEO_FIELDS,
+      'custom_fields': DEFAULT_CUSTOM_FIELDS
+    })
+    params.update(kwargs)
+
+    return self.brightcove.find_videos_by_ids(**params)
 
   def get_videos_for_playlist(self, playlist, **kwargs):
     params = dict(DEFAULT_SEARCH_ARGS)
