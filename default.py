@@ -48,11 +48,3 @@ if __name__ == '__main__':
     plugin.run()
   except:
     utils.show_error_dialog()
-
-    items = []
-    if False:
-      items.append({
-        'label': 'Report Issue...',
-        'path': 'plugin://'
-      })
-    plugin.finish(items)
