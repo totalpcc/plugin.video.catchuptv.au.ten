@@ -1,3 +1,12 @@
+[B]Version 0.5.1[/B]
+- Merge pull request #8 from xbmc-catchuptv-au/adammw/issue-reporting
+- Rename show_error_dialog method to handle_error
+- Restructure addon and move utils into addon folder
+- Rename addon to prevent conflicts
+- Automatic issue reporting on exceptions
+- Log import lookup path
+- Fix up imports
+
 [B]Version v0.5.0[/B]
 - Implement featured videos listing
 - Prevent shows without queries appearing
