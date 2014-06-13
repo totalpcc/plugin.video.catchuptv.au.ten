@@ -46,4 +46,4 @@ class Addon:
     try:
       self.plugin.run()
     except:
-      self.utils.show_error_dialog()
+      self.utils.handle_error()
