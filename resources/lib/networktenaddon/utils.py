@@ -41,7 +41,7 @@ class Utils:
   def log_init(self):
     self.log.debug('Initialising %s addon, v%s' % (self.name, self.version))
 
-  def show_error_dialog(self, err=""):
+  def handle_error(self, err=""):
     traceback_str = traceback.format_exc()
     self.log.error(traceback_str)
     report_issue = False
