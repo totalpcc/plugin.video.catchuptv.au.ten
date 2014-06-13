@@ -24,7 +24,6 @@
 
 import sys
 import urllib
-import utils
 from networktenvideo.api import NetworkTenVideo, SWF_URL, PAGE_URL
 
 import xbmcswift2

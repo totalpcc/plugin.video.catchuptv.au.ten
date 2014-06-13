@@ -29,22 +29,11 @@ try:
 except:
    current_dir = os.getcwd()
 
-# Temporary logging to track down import errors
-print "[TENPLAY ADDON] Adding \"%s\" to import lookup path" % os.path.join(current_dir, 'resources', 'lib')
 sys.path.append(os.path.join(current_dir, 'resources', 'lib'))
 
-from xbmcswift2 import Plugin
-from utils import Utils
-from addon import Addon
+from networktenaddon import Addon
 
-plugin = Plugin()
-utils = Utils(plugin)
-addon = Addon(plugin)
+addon = Addon()
 
 if __name__ == '__main__':
-  utils.log_init()
-
-  try:
-    plugin.run()
-  except:
-    utils.show_error_dialog()
+  addon.run()
