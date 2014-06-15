@@ -45,5 +45,9 @@ class Addon:
   def run(self):
     try:
       self.plugin.run()
+    except KeyboardInterrupt:
+      pass
+    except SystemExit:
+      pass
     except:
       self.utils.handle_error()
