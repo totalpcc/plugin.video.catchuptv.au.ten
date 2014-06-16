@@ -1,6 +1,11 @@
-[B]Version 0.5.1[/B]
+[B]Version 0.5.2[/B]
+- Ignore SystemExit and KeyboardInterrupt bug reports
+
+[B]Version v0.5.1[/B]
+- Version 0.5.1
 - Merge pull request #8 from xbmc-catchuptv-au/adammw/issue-reporting
 - Rename show_error_dialog method to handle_error
+- Merge branch 'master' into adammw/issue-reporting
 - Restructure addon and move utils into addon folder
 - Rename addon to prevent conflicts
 - Automatic issue reporting on exceptions
