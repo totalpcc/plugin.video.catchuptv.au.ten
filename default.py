@@ -25,11 +25,11 @@
 # Add ./resources/lib to the python path
 import os, sys
 try:
-   current_dir = os.path.dirname(os.path.abspath(__file__))
+  current_dir = os.path.dirname(os.path.abspath(__file__))
 except:
-   current_dir = os.getcwd()
+  current_dir = os.getcwd()
 
-sys.path.append(os.path.join(current_dir, 'resources', 'lib'))
+sys.path.insert(0, os.path.join(current_dir, 'resources', 'lib'))
 
 from networktenaddon import Addon
 
