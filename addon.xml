@@ -18,5 +18,8 @@
         <summary>TENplay</summary>
         <description>Watch latest episodes, sneak peeks, exclusive internet extras and other videos from Network Ten.</description>
         <disclaimer>You must be within Australia to use watch these videos.[CR]The TENplay, TEN, ONE and ELEVEN logo and trade marks are registered trademarks of Network Ten Pty Limited.</disclaimer>
+        <email>adman.com@gmail.com</email>
+        <source>https://github.com/xbmc-catchuptv-au/plugin.video.catchuptv.au.ten.git</source>
+        <website>https://github.com/xbmc-catchuptv-au/plugin.video.catchuptv.au.ten</website>
     </extension>
 </addon>
