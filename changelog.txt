@@ -1,4 +1,9 @@
-[B]Version 0.5.2[/B]
+[B]Version 0.5.3[/B]
+- Add extra metadata to addon descriptor
+- Add resources/lib to start of path instead of end
+
+[B]Version v0.5.2[/B]
+- Version 0.5.2
 - Ignore SystemExit and KeyboardInterrupt bug reports
 
 [B]Version v0.5.1[/B]
