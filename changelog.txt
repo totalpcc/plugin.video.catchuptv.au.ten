@@ -1,4 +1,9 @@
-[B]Version 0.5.3[/B]
+[B]Version 0.5.4[/B]
+- Fix fanart and update listing for previous/next
+- Guard against None fanart
+
+[B]Version v0.5.3[/B]
+- Version 0.5.3
 - Add extra metadata to addon descriptor
 - Add resources/lib to start of path instead of end
 
