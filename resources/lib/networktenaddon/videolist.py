@@ -2,17 +2,17 @@
 #   Network Ten CatchUp TV Video Addon
 #
 #   Copyright (c) 2013 Adam Malcontenti-Wilson
-# 
+#
 #   Permission is hereby granted, free of charge, to any person obtaining a copy
 #   of this software and associated documentation files (the "Software"), to deal
 #   in the Software without restriction, including without limitation the rights
 #   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 #   copies of the Software, and to permit persons to whom the Software is
 #   furnished to do so, subject to the following conditions:
-# 
+#
 #   The above copyright notice and this permission notice shall be included in
 #   all copies or substantial portions of the Software.
-# 
+#
 #   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 #   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 #   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -44,7 +44,7 @@ def strptime(date_string, format):
 class Module(xbmcswift2.Module):
   def __init__(self):
     super(Module, self).__init__('plugin.video.catchuptv.au.ten.videolist')
-    
+
     # decorators
     self.videolist = self.route('/videos/<query>/<page>', options={'page': '0'})(self.videolist)
 
@@ -82,7 +82,8 @@ class Module(xbmcswift2.Module):
         'language': 'en',
         'channels': 2
       })
-      if 'fanart' in self.request.args:
+
+      if 'fanart' in self.request.args and self.request.args['fanart'][0] is not None:
         item.set_property('fanart_image', self.request.args['fanart'][0])
       videoItems.append(item)
 
@@ -103,7 +104,7 @@ class Module(xbmcswift2.Module):
 
   def get_item_info(self, video):
     info_dict = {
-      'title': htmlparser.unescape(video.name), 
+      'title': htmlparser.unescape(video.name),
       'dateadded': video.publishedDate.strftime('%Y-%m-%d %H:%M:%S')
     }
 
