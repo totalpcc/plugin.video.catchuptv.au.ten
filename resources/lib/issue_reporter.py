@@ -49,7 +49,7 @@ class IssueReporter:
 
   def make_request(self, url):
     return urllib2.Request(url, headers={
-      "Authorization": "Basic %s" % config.ISSUE_API_AUTH,
+      "Authorization": "Basic %s" % config.GITHUB_API_AUTH,
       "Content-Type": "application/json",
       "User-Agent": '%s/%s' % (self.utils.id, self.utils.version)
     })
@@ -125,7 +125,7 @@ class IssueReporter:
     self.utils.log.debug("Issue Body: %s" % issue_body)
 
     try:
-      response = urllib2.urlopen(self.make_request(config.ISSUE_API_URL), json.dumps({
+      response = urllib2.urlopen(self.make_request("%s/issues" % config.GITHUB_API_URL), json.dumps({
         "title": "End-user bug report",
         "body": issue_body
       }))

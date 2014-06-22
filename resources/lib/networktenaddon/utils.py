@@ -28,6 +28,7 @@
 import sys
 import traceback
 from issue_reporter import IssueReporter
+from version_check import VersionCheck
 from xbmcswift2 import xbmcgui, xbmcplugin
 
 class Utils:
@@ -45,14 +46,19 @@ class Utils:
     traceback_str = traceback.format_exc()
     self.log.error(traceback_str)
     report_issue = False
+    version_checker = VersionCheck(self.log)
     d = xbmcgui.Dialog()
     if d:
       message = self.dialog_error_msg(err)
-      try:
-        message.append("Would you like to report this issue to GitHub?")
-        report_issue = d.yesno(*message)
-      except:
-        message.append("If this error continues to occur, please report it on GitHub.")
+      if version_checker.is_latest_version(self.version):
+        try:
+          message.append("Would you like to report this issue to GitHub?")
+          report_issue = d.yesno(*message)
+        except:
+          message.append("If this error continues to occur, please report it on GitHub.")
+          d.ok(*message)
+      else:
+        message.append("Please try updating this addon before reporting this issue.")
         d.ok(*message)
     if report_issue:
       self.log.debug("Reporting issue to GitHub")

@@ -22,7 +22,7 @@
 #   THE SOFTWARE.
 #
 
-ISSUE_API_URL = 'https://api.github.com/repos/xbmc-catchuptv-au/plugin.video.catchuptv.au.ten/issues'
-ISSUE_API_AUTH = 'eGJtY2JvdDo1OTQxNTJjMTBhZGFiNGRlN2M0YWZkZDYwZGQ5NDFkNWY4YmIzOGFj'
+GITHUB_API_URL = 'https://api.github.com/repos/xbmc-catchuptv-au/plugin.video.catchuptv.au.ten'
+GITHUB_API_AUTH = 'eGJtY2JvdDo1OTQxNTJjMTBhZGFiNGRlN2M0YWZkZDYwZGQ5NDFkNWY4YmIzOGFj'
 GIST_API_URL = 'https://api.github.com/gists'
 CACHE_TTL = 15 # in minutes
