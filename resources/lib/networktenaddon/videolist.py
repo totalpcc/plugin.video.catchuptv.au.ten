@@ -62,6 +62,14 @@ class Module(xbmcswift2.Module):
       query['page_number'] = page
       videos = api.search_videos(**query)
 
+    fanart_url = None
+    if 'fanart' in self.request.args:
+      fanart_url = self.request.args['fanart'][0]
+
+    update_listing = False
+    if 'update' in self.request.args and self.request.args['update'][0]:
+      update_listing = True
+
     videoItems = []
     for video in videos.items:
       item = ListItem.from_dict(
@@ -83,24 +91,33 @@ class Module(xbmcswift2.Module):
         'channels': 2
       })
 
-      if 'fanart' in self.request.args and self.request.args['fanart'][0] is not None:
-        item.set_property('fanart_image', self.request.args['fanart'][0])
+      if fanart_url:
+        item.set_property('fanart_image', fanart_url)
       videoItems.append(item)
 
     if videos.total_count > (videos.page_size * (int(page) + 1)):
-      videoItems.insert(0, {
-          'label': 'Next >>',
-          'path': self.url_for('videolist.videolist', query=querystring, page=str(int(page) + 1))
-      })
+      item = ListItem.from_dict(
+        label='Next >>',
+        path=self.url_for('videolist.videolist', query=querystring, page=str(int(page) + 1), fanart=fanart_url, update=True)
+      )
+      if fanart_url:
+        item.set_property('fanart_image', fanart_url)
+      videoItems.insert(0, item)
 
     if int(page) > 0:
-      videoItems.insert(0, {
-          'label': '<< Previous',
-          'path': self.url_for('videolist.videolist', query=querystring, page=str(int(page) - 1))
-      })
+      item = ListItem.from_dict(
+        label='<< Previous',
+        path=self.url_for('videolist.videolist', query=querystring, page=str(int(page) - 1), fanart=fanart_url, update=True)
+      )
+      if fanart_url:
+        item.set_property('fanart_image', fanart_url)
+      videoItems.insert(0, item)
 
     self.set_content('episodes')
-    self.plugin.finish(items=videoItems, sort_methods=[SortMethod.UNSORTED, SortMethod.EPISODE, SortMethod.VIDEO_TITLE, SortMethod.VIDEO_RUNTIME])
+    self.plugin.finish(
+      items=videoItems,
+      update_listing=update_listing,
+      sort_methods=[SortMethod.UNSORTED, SortMethod.EPISODE, SortMethod.VIDEO_TITLE, SortMethod.VIDEO_RUNTIME])
 
   def get_item_info(self, video):
     info_dict = {
