@@ -2,17 +2,17 @@
 #   Network Ten CatchUp TV Video API Library
 #
 #   Copyright (c) 2013 Adam Malcontenti-Wilson
-# 
+#
 #   Permission is hereby granted, free of charge, to any person obtaining a copy
 #   of this software and associated documentation files (the "Software"), to deal
 #   in the Software without restriction, including without limitation the rights
 #   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 #   copies of the Software, and to permit persons to whom the Software is
 #   furnished to do so, subject to the following conditions:
-# 
+#
 #   The above copyright notice and this permission notice shall be included in
 #   all copies or substantial portions of the Software.
-# 
+#
 #   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 #   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 #   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -135,7 +135,7 @@ class NetworkTenVideo:
     # find the fanart on the show url
     if len(channel) == 0 or len(show_name) == 0:
       return None
-    
+
     # load the show url and try and find the first image that isn't a screenshot from a video
     try:
       resp = self._request('http://tenplay.com.au/' + channel + '/' + show_name)
@@ -241,6 +241,14 @@ class NetworkTenVideo:
 
     return self.brightcove.search_videos(**params)
 
+  def find_video_by_id(self, video_id, **kwargs):
+    params = dict({
+      'video_fields': DEFAULT_VIDEO_FIELDS,
+      'custom_fields': DEFAULT_CUSTOM_FIELDS
+    })
+    params.update(kwargs)
+    return self.brightcove.find_video_by_id(video_id, **kwargs)
+
   def find_videos_by_ids(self, **kwargs):
     params = dict({
       'video_fields': DEFAULT_VIDEO_FIELDS,
@@ -254,7 +262,7 @@ class NetworkTenVideo:
     params = dict(DEFAULT_SEARCH_ARGS)
     params.update(playlist.query)
     params.update(kwargs)
-    
+
     return self.brightcove.search_videos(**params)
 
   def get_media_for_video(self, videoId=None, video=None):
@@ -262,7 +270,8 @@ class NetworkTenVideo:
     # (docs: http://support.brightcove.com/en/video-cloud/docs/accessing-video-content-media-api)
     # and it's much easier/flexible, we aren't so as not to arouse suspicion and to future proof the library
     #self.brightcove.find_video_by_id(video.id, fields='length,renditions,FLVURL')
-    if video:
-      videoId = video.id
     amfHelper = BrightCoveAMFHelper(PLAYER_KEY, videoId, PAGE_URL, AMF_SEED)
-    return get_item({'items':amfHelper.data['renditions']}, MediaRenditionItemCollection)
+    if amfHelper.data:
+      return get_item({'items': amfHelper.data['renditions']}, MediaRenditionItemCollection)
+    else:
+      return get_item({'items': []}, MediaRenditionItemCollection)

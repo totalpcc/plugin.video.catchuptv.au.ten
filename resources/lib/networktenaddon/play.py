@@ -41,16 +41,22 @@ class Module(xbmcswift2.Module):
     api = NetworkTenVideo()
     media = api.get_media_for_video(videoId)
     self.log.debug('Found media renditions for video: %s', repr(media.items))
+    if len(media.items):
+        # Blindly go for the highest bitrate for now.
+        # Later versions could include a customisable setting of which stream to use
+        media_sorted = sorted(media.items, key=lambda m: m.encodingRate, reverse=True)
+        media = media_sorted[0]
+        path = media.defaultURL
+        self.log.info('Using rendition: %s with url: %s' % (media, path))
+    else:
+        # Fallback to API FLVFullLength (e.g. for live streams)
+        video = api.find_video_by_id(videoId, video_fields='FLVFullLength')
+        path = video.FLVFullLength
+        self.log.info('Using fallback FLVFullLength: %s' % path)
 
-    # Blindly go for the highest bitrate for now.
-    # Later versions could include a customisable setting of which stream to use
-    media_sorted = sorted(media.items, key=lambda m: m.encodingRate, reverse=True)
-    media = media_sorted[0]
-    path = media.defaultURL
     if path.startswith('rtmp'):
       path = path.replace('&mp4:', ' playpath=mp4:')
       path += ' swfVfy=true swfUrl=%s pageUrl=%s' % (SWF_URL, PAGE_URL)
-    self.log.info('Using rendition: %s with url: %s' % (media, path))
 
     # Set the resolved url, and include media stream info
     item = ListItem.from_dict(path=path)
