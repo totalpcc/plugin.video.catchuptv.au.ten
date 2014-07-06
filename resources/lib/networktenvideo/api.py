@@ -46,7 +46,7 @@ import urllib2
 from datetime import datetime
 from brightcove.api import Brightcove
 from brightcove.core import get_item
-from networktenvideo.objects import Show, ShowItemCollection, PlaylistItemCollection, MediaRenditionItemCollection
+from networktenvideo.objects import AMFRendition, Show, ShowItemCollection, PlaylistItemCollection, MediaRenditionItemCollection
 from networktenvideo.amf import BrightCoveAMFHelper
 
 API_TOKEN = 'lWCaZyhokufjqe7H4TLpXwHSTnNXtqHxyMvoNOsmYA_GRaZ4zcwysw..'
@@ -275,3 +275,9 @@ class NetworkTenVideo:
       return get_item({'items': amfHelper.data['renditions']}, MediaRenditionItemCollection)
     else:
       return get_item({'items': []}, MediaRenditionItemCollection)
+
+  def get_fallback_media_for_video(self, videoId=None):
+    video = self.brightcove.find_video_by_id(videoId, video_fields='FLVFullLength')
+    if video.FLVFullLength:
+      media = get_item(video.FLVFullLength, AMFRendition)
+      return media

@@ -50,9 +50,9 @@ class Module(xbmcswift2.Module):
         self.log.info('Using rendition: %s with url: %s' % (media, path))
     else:
         # Fallback to API FLVFullLength (e.g. for live streams)
-        video = api.find_video_by_id(videoId, video_fields='FLVFullLength')
-        path = video.FLVFullLength
-        self.log.info('Using fallback FLVFullLength: %s' % path)
+        media = api.get_fallback_media_for_video(videoId)
+        path = media.remoteUrl
+        self.log.info('Using fallback rendition: %s with url: %s' % (media, path))
 
     if path.startswith('rtmp'):
       path = path.replace('&mp4:', ' playpath=mp4:')
