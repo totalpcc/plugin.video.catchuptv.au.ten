@@ -1,21 +1,21 @@
-[B]Version 0.5.4[/B]
+[B]Version 0.5.5[/B]
+- Refactor media fallback into networktenvideo lib
+- Add fallback to FLVFullLength to try to support live streams
+- Add version check before reporting issue
+
+[B]Version v0.5.4[/B]
 - Fix fanart and update listing for previous/next
 - Guard against None fanart
 
 [B]Version v0.5.3[/B]
-- Version 0.5.3
 - Add extra metadata to addon descriptor
 - Add resources/lib to start of path instead of end
 
 [B]Version v0.5.2[/B]
-- Version 0.5.2
 - Ignore SystemExit and KeyboardInterrupt bug reports
 
 [B]Version v0.5.1[/B]
-- Version 0.5.1
-- Merge pull request #8 from xbmc-catchuptv-au/adammw/issue-reporting
 - Rename show_error_dialog method to handle_error
-- Merge branch 'master' into adammw/issue-reporting
 - Restructure addon and move utils into addon folder
 - Rename addon to prevent conflicts
 - Automatic issue reporting on exceptions
