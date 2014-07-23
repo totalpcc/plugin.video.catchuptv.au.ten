@@ -37,6 +37,7 @@ class Module(xbmcswift2.Module):
         {'label': 'Featured', 'path': self.plugin.url_for('videolist.videolist', query='featured', page='0')},
         {'label': 'TV Shows', 'path': self.plugin.url_for('showlist.showlist', type='tvshows')},
         {'label': 'News', 'path': self.plugin.url_for('showlist.showlist', type='news')},
-        {'label': 'Sport', 'path': self.plugin.url_for('showlist.showlist', type='sport')}
+        {'label': 'Sport', 'path': self.plugin.url_for('showlist.showlist', type='sport')},
+        {'label': 'Live Streaming', 'path': self.plugin.url_for('showlist.showlist', type='live')}
     ]
     return items

@@ -58,6 +58,7 @@ FANART_BOOTSTRAP_URL = 'https://gist.github.com/adammw/8662672/raw/fanart.json'
 OVERRIDES_URL = 'https://gist.github.com/adammw/8662672/raw/overrides.json'
 EPISODES_URL = 'http://tenplay.com.au/Handlers/GenericUserControlRenderer.ashx?path=~/UserControls/Browse/Episodes.ascx&props=ParentID,{%s}'
 SHOWDATA_URL = 'https://gist.github.com/adammw/b1ce5f1a41b9f030b824/raw/show-data.json'
+LIVEDATA_URL = 'https://gist.github.com/adammw/8662672/raw/live.json'
 MOBILEDATA_URL = 'http://tenplay.com.au/web%20api/mobilepreloaddata'
 DEFAULT_VIDEO_FIELDS = 'id,name,publishedDate,shortDescription,length,videoStillURL,creationDate,lastModifiedDate'
 DEFAULT_CUSTOM_FIELDS = 'id,name,publishedDate,shortDescription,length,videoStillURL,creationDate,lastModifiedDate'
@@ -204,6 +205,10 @@ class NetworkTenVideo:
         'Title': re.sub('([A-Z])',' \\1', key).title().strip()
       })
     return sports
+
+  def get_live_categories(self):
+    resp = self._request(LIVEDATA_URL)
+    return json.loads(resp)
 
   def get_shows(self):
     # load shows

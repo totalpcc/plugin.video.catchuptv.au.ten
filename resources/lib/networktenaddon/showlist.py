@@ -65,6 +65,25 @@ class Module(xbmcswift2.Module):
           path=self.url_for('videolist.videolist', explicit=True, query=sport['BCQueryForVideoListing'], page='0'),
         )
         shows.append(item)
+    elif 'live' == type:
+      for category in api.get_live_categories():
+        fanart_url = None
+
+        if 'fanart' in category:
+          fanart_url = category['fanart']
+
+        item = ListItem.from_dict(
+          label=category['title'],
+          path=self.url_for('videolist.videolist', explicit=True, query=category['query'], page='0', fanart=fanart_url),
+        )
+
+        if fanart_url:
+          item.set_property('fanart_image', fanart_url)
+
+        if 'thumbnail' in category:
+          item.set_thumbnail(category['thumbnail'])
+
+        shows.append(item)
     else: #tvshows
       for show in api.get_shows():
         info_dict = {}
@@ -86,7 +105,7 @@ class Module(xbmcswift2.Module):
           info_dict['studio'] = show['Channel']
         if 'NumberOfVideosFromBCQuery' in show:
           # not technically correct as this also returns the number of short form as well but close enough
-          info_dict['episode'] = show['NumberOfVideosFromBCQuery'] 
+          info_dict['episode'] = show['NumberOfVideosFromBCQuery']
 
         if 'BCQueryForVideoListing' in show and len(show['BCQueryForVideoListing']):
           query = urlparse.parse_qs(show['BCQueryForVideoListing'], True)
